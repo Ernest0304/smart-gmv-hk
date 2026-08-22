@@ -9,7 +9,6 @@ const CONFIG = (() => {
   const local = qp && /^https?:\/\/localhost(:\d+)?$/.test(qp) ? qp : null;
   /* demo=1: every network call is answered by js/demo.js with canned invented
      data and roster taps log straight in — no backend, no sheet, no PIN. */
-  // TODO deploy: replace with the HK Railway URL once the service exists.
-  return { apiBase: local || 'https://smart-gmv-hk-server.invalid',
+  return { apiBase: local || 'https://smart-gmv-hk-production.up.railway.app',
            demo: params.get('demo') === '1' };
 })();
