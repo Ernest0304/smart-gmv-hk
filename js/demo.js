@@ -4,14 +4,14 @@
 
 const DEMO = (() => {
   const MERCHANTS = [
-    { facility: 'H1', kitchen: 'K4',  brand: 'Kaya Toast Club',        sfdcId: 'DEMO-004' },
-    { facility: 'H1', kitchen: 'K7',  brand: 'Bao Department',         sfdcId: 'DEMO-007' },
-    { facility: 'H1', kitchen: 'K11', brand: 'Green Curry Lab',        sfdcId: 'DEMO-011', overnight: true },
-    { facility: 'H1', kitchen: 'K13', brand: 'Wok & Ladle',            sfdcId: 'DEMO-013' },
-    { facility: 'H1', kitchen: 'K19', brand: 'Satay After Dark',       sfdcId: 'DEMO-019' },
-    { facility: 'H1', kitchen: 'K21', brand: 'Pandan Bakehouse',       sfdcId: 'DEMO-021' },
-    { facility: 'H1', kitchen: 'CR',  brand: 'Cloud Bakehouse',        sfdcId: 'DEMO-901' },
-    { facility: 'H1', kitchen: 'CR',  brand: 'Midnight Mochi',         sfdcId: 'DEMO-902' },
+    { facility: 'HK99', kitchen: 'K5',  brand: 'Kaya Toast Club',        sfdcId: 'DEMO-004' },
+    { facility: 'HK99', kitchen: 'K7',  brand: 'Bao Department',         sfdcId: 'DEMO-007' },
+    { facility: 'HK99', kitchen: 'K11', brand: 'Green Curry Lab',        sfdcId: 'DEMO-011', overnight: true },
+    { facility: 'HK99', kitchen: 'K15', brand: 'Wok & Ladle',            sfdcId: 'DEMO-013' },
+    { facility: 'HK99', kitchen: 'K19', brand: 'Satay After Dark',       sfdcId: 'DEMO-019' },
+    { facility: 'HK99', kitchen: 'K21', brand: 'Pandan Bakehouse',       sfdcId: 'DEMO-021' },
+    { facility: 'HK99', kitchen: 'CR',  brand: 'Cloud Bakehouse',        sfdcId: 'DEMO-901' },
+    { facility: 'HK99', kitchen: 'CR',  brand: 'Midnight Mochi',         sfdcId: 'DEMO-902' },
   ].map((m) => ({ site: 'Kwun Tong (demo)', keetaOn: true, fpOn: true, catering: false,
                   overnight: false, disabled: false, aigens: false, ...m }));
 
@@ -40,19 +40,19 @@ const DEMO = (() => {
   /* two closings already in (one flagged), plus this morning's opening for the
      24-hour brand — so the list shows every state the redesign cares about */
   const TODAY_RECORDS = [
-    { recordId: 'H1-K4-kayatoastclub-demo-C', recordType: 'closing', salesDate: today,
-      timestamp: stamp('20:41'), kitchen: 'K4', brand: 'Kaya Toast Club', sfdcId: 'DEMO-004',
+    { recordId: 'HK99-K4-kayatoastclub-demo-C', recordType: 'closing', salesDate: today,
+      timestamp: stamp('20:41'), kitchen: 'K5', brand: 'Kaya Toast Club', sfdcId: 'DEMO-004',
       status: 'Operated', staff: 'Demo User (st-demo)',
       channels: { keeta: ch(31, 742.50), fp: ch(12, 268.40) },
       edited: false, baselineRef: '', billables: { keeta: { orders: 31, gmv: 742.50 },
       fp: { orders: 12, gmv: 268.40 } }, billingFlag: 'OK', notes: '' },
-    { recordId: 'H1-K7-baodepartment-demo-C', recordType: 'closing', salesDate: today,
+    { recordId: 'HK99-K7-baodepartment-demo-C', recordType: 'closing', salesDate: today,
       timestamp: stamp('21:04'), kitchen: 'K7', brand: 'Bao Department', sfdcId: 'DEMO-007',
       status: 'Operated', staff: 'Demo User (st-demo)',
       channels: { keeta: ch(47, 1284.60), fp: ch(23, 612.40) },
       edited: true, baselineRef: '', billables: { keeta: { orders: 47, gmv: 1284.60 },
       fp: { orders: 23, gmv: 612.40 } }, billingFlag: 'CHECK', notes: 'demo: flagged for review' },
-    { recordId: 'H1-K11-greencurrylab-demo-B', recordType: 'baseline', salesDate: today,
+    { recordId: 'HK99-K11-greencurrylab-demo-B', recordType: 'baseline', salesDate: today,
       timestamp: stamp('10:12'), kitchen: 'K11', brand: 'Green Curry Lab', sfdcId: 'DEMO-011',
       status: 'Operated', staff: 'Demo User (st-demo)',
       channels: { keeta: ch(5, 121.30), fp: ch(2, 44.10) },
@@ -68,8 +68,8 @@ const DEMO = (() => {
     const p = path.split('?')[0];
 
     if (p === '/api/catalog') {
-      return reply({ sites: [{ id: 'H1', name: 'Kwun Tong (demo)' }],
-        staff: [{ id: 'st-demo', name: 'Demo User', homeSites: ['H1'],
+      return reply({ sites: [{ id: 'HK99', name: 'Kwun Tong (demo)' }],
+        staff: [{ id: 'st-demo', name: 'Demo User', homeSites: ['HK99'],
                   needsPin: false, partTime: false, reports: true }],
         customers: [], merchants: MERCHANTS });
     }
@@ -86,7 +86,7 @@ const DEMO = (() => {
       let name = 'Demo User';
       try { name = JSON.parse(opts.body || '{}').name || name; } catch (e) { /* keep */ }
       return reply({ ok: true, token: 'demo-session',
-        staff: { id: 'st-demo-new', name, home: 'H1', homeSites: ['H1'],
+        staff: { id: 'st-demo-new', name, home: 'HK99', homeSites: ['HK99'],
                  partTimer: false, needsPin: false, reports: true } });
     }
     if (p === '/api/records/today') {

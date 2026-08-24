@@ -211,7 +211,8 @@ const CATERING_SITE = 'CATERING';   // pseudo-facility: catering has its own ent
 function channelsFor(siteId) {
   if (siteId === CATERING_SITE) return ['catering'];   // one line, nothing else
   const ch = ['keeta', 'fp', 'others', 'catering'];
-  if (siteId === 'S12') ch.push('dinein', 'promodinein');
+  // HK has no food-hall site yet; wire the real code here if one opens (SG: S12)
+  if (siteId === 'HK12') ch.push('dinein', 'promodinein');
   return ch;
 }
 /* ---------- inline icon set (style pack A, 29 Jul): consistent line icons
