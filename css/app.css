@@ -632,3 +632,514 @@ button, input, select, .chip, .merchant-card, .staff-btn, .site-btn,
   font-size: 11px; font-weight: 800; letter-spacing: .08em;
   padding: 3px 7px; background: var(--kb-yellow); color: var(--kb-ink);
 }
+
+/* ==========================================================================
+   DESKTOP (>=900px) — ported from Smart GMV SG, 25 Aug 2026.
+   The phone is untouched: every rule below lives inside the width query, and
+   the only base-sheet addition is `.ck-panel { display: contents }` — a panel
+   that generates no box, so the mobile DOM lays out exactly as if the wrapper
+   were not there. That is a structural guarantee, not carefulness.
+
+   Three bands of dark at the top (masthead, preview strip, headline), figure
+   cards straddling the band's lower edge, and content in raised white panels
+   with their own headers. The table stays the working surface — it is what a
+   supervisor actually reads — but it lives in a panel instead of floating.
+
+   HK deviations from the SG original, each measured rather than guessed:
+     - .ch-keeta uses #11CB9A, the secondary colour in KeeTa's official app
+       icon (Kangaroo Limited, App Store artwork, identical across the consumer
+       and Partner icons). Its PRIMARY brand colour #FFE200 is deliberately not
+       used: it is within a rounding error of --kb-yellow #FFE600, and in this
+       theme yellow is the single action signal — a channel bar painted in it
+       reads as "something needs doing here".
+     - the brand column is wider (--main 1254px vs SG's 1180px) because Hong
+       Kong brand names carry CJK: measured in the live font, the longest of
+       the 37 registered brands renders at 266px against Singapore's 198px
+       column. 4 of 28 distinct names exceed SG's width.
+     - the brand track is minmax(0, 1fr), not minmax(180px, 1fr). SG's hard
+       minimum makes the row wider than its panel between 900px and ~1170px,
+       where `overflow: hidden` silently CLIPS the last two columns instead of
+       overflowing visibly. Letting the track shrink degrades to an ellipsis
+       instead of amputating the money column.
+   ========================================================================== */
+.ck-panel { display: contents; }
+
+@media (min-width: 900px) {
+
+  /* ---------- 0 · TOKENS -------------------------------------------------- */
+  :root {
+    --hdr-h: 60px;
+    --band-h: 168px;
+    --gut: 20px;
+    --pad: 26px;
+    --panel-r: 16px;
+    --ground: #ECEAE5;          /* deeper than --paper so white panels lift */
+    --band: #121316;
+    --band-2: #1B1D21;
+    --chip: #F1EFEB;
+    --row-h: 56px;
+    --lift: 0 1px 2px rgba(23,24,26,.06), 0 10px 28px -12px rgba(23,24,26,.22);
+    --lift-2: 0 1px 2px rgba(23,24,26,.05), 0 2px 8px rgba(23,24,26,.05);
+  }
+  body { background: var(--ground); }
+
+  /* ---------- 1 · PAGE ---------------------------------------------------- */
+  .view {
+    --main: 1254px;
+    --rail-w: 0px;
+    --rail-x: max(28px, calc((100% - var(--main)) / 2));
+    max-width: none; padding: 0 0 72px;
+    display: grid; align-content: start;
+    grid-template-columns:
+      [full-start] minmax(28px, 1fr)
+      [main-start] minmax(0, var(--main)) [main-end]
+      minmax(28px, 1fr) [full-end];
+  }
+  .view > * { grid-column: main; min-width: 0; }
+
+  /* bands paint edge to edge; their CONTENT stays locked to the main column */
+  .app-header, .demo-badge, #view-checklist > .progress-card, .login-hero {
+    grid-column: full;
+    padding-left: calc(var(--rail-x) + 0px);
+    padding-right: calc(var(--rail-x) + 0px);
+    border-radius: 0; border: 0;
+  }
+
+  #view-checklist { --main: 1254px; }
+  #view-review    { --main: 1080px; }
+  #view-billing   { --main: 1180px; }
+  #view-brands, #view-dinein { --main: 1000px; }
+  #view-capture   { --main: 620px; }
+  #view-addbrand  { --main: 620px; }
+  #view-login     { --main: 460px; }
+  .login-card { flex: none; }
+
+  /* ---------- 2 · MASTHEAD ------------------------------------------------ */
+  .app-header {
+    position: sticky; top: 0; z-index: 30;
+    height: var(--hdr-h); min-height: var(--hdr-h);
+    display: flex; align-items: center; gap: 18px;
+    background: var(--band); color: #fff;
+    /* No hairline. The masthead, the preview strip and the headline band are one
+       continuous dark field, and a rule drawn inside a single field is noise. */
+    box-shadow: none; border-bottom: 0;
+  }
+  .app-header .header-center {
+    flex: 1; display: flex; align-items: baseline; gap: 12px; text-align: left;
+  }
+  .app-header .header-site {
+    font-size: 15px; font-weight: 650; letter-spacing: -.01em; color: #fff;
+  }
+  .app-header .header-meta {
+    font-size: 12.5px; color: rgba(255,255,255,.52); letter-spacing: .01em;
+  }
+  .app-header .icon-btn {
+    width: 36px; height: 36px; border-radius: 10px;
+    background: rgba(255,255,255,.07); color: rgba(255,255,255,.85);
+    border: 0; transition: background .15s ease;
+  }
+  .app-header .icon-btn:hover { background: rgba(255,255,255,.14); }
+
+  /* The mobile theme paints this a full-bleed yellow band. On desktop it sits
+     between the masthead and the headline band, and a bright stripe there cuts
+     the single dark field in two. HK's badge is plain text (no <b> pill like
+     SG's), so only the field colour changes. Production hides it entirely. */
+  .demo-badge {
+    background: var(--band); color: rgba(255,255,255,.5);
+    display: flex; align-items: center; gap: 10px;
+    font-size: 12px; font-weight: 500; letter-spacing: 0; text-transform: none;
+    padding-top: 14px; padding-bottom: 4px; text-align: left;
+  }
+
+  /* ---------- 3 · HEADLINE BAND ------------------------------------------ */
+  #view-checklist > .progress-card {
+    background: var(--band);
+    min-height: var(--band-h);
+    display: flex; align-items: flex-start; gap: 26px;
+    padding-top: 26px; padding-bottom: 84px;  /* cards straddle the lower space */
+    margin: 0; box-shadow: none;
+  }
+  /* the base sheet hard-codes the svg at 72px; shrinking only the container
+     let the ring overflow it by 8px and read as clipped. Size both. */
+  #view-checklist > .progress-card .progress-ring,
+  #view-checklist > .progress-card .progress-ring svg { width: 68px; height: 68px; }
+  #view-checklist > .progress-card .progress-ring { flex: none; }
+  #view-checklist > .progress-card .ring-bg,
+  #view-checklist > .progress-card .ring-fg { stroke-width: 6; }
+  #view-checklist > .progress-card .ring-bg { stroke: rgba(255,255,255,.16); }
+  #view-checklist > .progress-card .ring-fg { stroke: #FFE600; }
+  #view-checklist > .progress-card .ring-label b { color: #fff; font-size: 20px; }
+  #view-checklist > .progress-card .ring-label .rl-word {
+    color: rgba(255,255,255,.5); font-size: 9.5px; letter-spacing: .08em;
+  }
+  .progress-text { flex: 1; padding-top: 2px; }
+  .progress-text h2 {
+    font-size: 30px; font-weight: 700; letter-spacing: -.022em; color: #fff;
+    line-height: 1.14; margin-bottom: 7px;
+  }
+  .progress-text p {
+    font-size: 14px; color: rgba(255,255,255,.58); line-height: 1.5;
+  }
+  .progress-text p.prog-flag {
+    display: inline-flex; align-items: center; gap: 6px; margin-top: 10px;
+    padding: 5px 12px; border-radius: 999px;
+    background: rgba(255,230,0,.13); color: #FFE600;
+    font-size: 12.5px; font-weight: 600; letter-spacing: .01em;
+  }
+  .progress-text p.prog-flag.hidden { display: none; }
+  .hero-live {
+    align-self: flex-start; flex: none;
+    background: rgba(255,255,255,.09); color: rgba(255,255,255,.72);
+    border: 0; border-radius: 999px; padding: 5px 13px;
+    font-size: 10.5px; font-weight: 700; letter-spacing: .11em;
+  }
+
+  /* ---------- 4 · FIGURE CARDS (straddle the band) ----------------------- */
+  #ck-dash { display: block !important; margin-top: -68px; position: relative; z-index: 5; }
+  .kpi-row {
+    display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px;
+  }
+  .kpi {
+    background: #fff; border-radius: var(--panel-r); box-shadow: var(--lift);
+    padding: 18px 20px 17px; display: flex; flex-direction: column; gap: 3px;
+    border-top: 3px solid transparent;
+  }
+  .kpi-k {
+    font-size: 10.5px; font-weight: 650; letter-spacing: .085em;
+    text-transform: uppercase; color: var(--ink-3);
+  }
+  .kpi-v {
+    font-size: 27px; font-weight: 700; letter-spacing: -.025em; color: var(--ink);
+    font-variant-numeric: tabular-nums; line-height: 1.18;
+  }
+  .kpi-s { font-size: 12px; color: var(--ink-2); line-height: 1.4; }
+  .kpi.is-flag  { border-top-color: var(--amber); }
+  .kpi.is-flag  .kpi-v { color: var(--amber); }
+  .kpi.is-done  { border-top-color: var(--green); }
+  .kpi.is-done  .kpi-v { color: var(--green); }
+
+  /* ---------- 5 · BODY: TABLE + RAIL ------------------------------------- */
+  #view-checklist {
+    grid-template-columns:
+      [full-start] minmax(28px, 1fr)
+      [main-start] minmax(0, calc(var(--main) - 340px))
+      [rail-start] 320px [main-end]
+      minmax(28px, 1fr) [full-end];
+    column-gap: 20px;
+  }
+  /* Columns are pinned; ROWS ARE NOT. Numbering the rows explicitly makes the
+     whole layout depend on the preview strip existing: in production that strip
+     is display:none, row 2's main column frees up, and the first panel
+     auto-places itself ABOVE the headline band. Demo mode can never show it.
+     Auto-placement plus a span on the rail gets the same result and cannot be
+     broken by an element that isn't there. */
+  #view-checklist > * { grid-column: main-start / rail-start; }
+  #view-checklist > .app-header   { grid-column: full; }
+  #view-checklist > .demo-badge   { grid-column: full; }
+  #view-checklist > .progress-card{ grid-column: full; }
+  #view-checklist > #ck-dash      { grid-column: main-start / main-end; }
+  #view-checklist > #ck-side {
+    display: block !important;
+    grid-column: rail-start / main-end; grid-row: span 40;
+    align-self: start; margin-top: 22px;
+  }
+
+  /* ---------- 6 · PANELS -------------------------------------------------- */
+  .ck-panel, .panel {
+    display: block; background: #fff; border-radius: var(--panel-r);
+    box-shadow: var(--lift-2); overflow: hidden; margin-top: 22px;
+  }
+  .ck-panel:has(> .section-label.hidden) { display: none; }
+  .ck-panel:has(> .merchant-list:empty) { display: none; }
+
+  .section-label, .panel-h {
+    display: flex; align-items: center; gap: 9px;
+    margin: 0; padding: 17px var(--pad) 15px;
+    border-bottom: 1px solid var(--line);
+    font-size: 15.5px; font-weight: 650; letter-spacing: -.012em; color: var(--ink);
+    text-transform: none;
+  }
+  .section-label .ic { width: 17px; height: 17px; color: var(--ink-3); }
+  .panel-h h3 { font-size: 15.5px; font-weight: 650; letter-spacing: -.012em; }
+  .sec-hint, .panel-sub {
+    margin-left: auto; font-size: 12px; font-weight: 500;
+    color: var(--ink-3); letter-spacing: 0; text-transform: none;
+  }
+  .panel-b { padding: 16px var(--pad) 20px; }
+
+  /* ---------- 7 · THE TABLE ---------------------------------------------- */
+  .merchant-list {
+    display: block; gap: 0; margin: 0; background: none; border: 0;
+  }
+  .merchant-card, .list-head {
+    --tbl: 54px minmax(0, 1fr) minmax(0, 150px) 148px 122px 16px;
+  }
+  .list-head {
+    display: grid !important; grid-template-columns: var(--tbl);
+    column-gap: var(--gut); align-items: center;
+    padding: 0 var(--pad); height: 34px;
+    background: #FBFAF8; border-bottom: 1px solid var(--line);
+    font-size: 10.5px; font-weight: 650; letter-spacing: .085em;
+    text-transform: uppercase; color: var(--ink-3);
+  }
+  .list-head span:nth-child(3) { text-align: right; }
+  .list-head span:nth-child(5) { text-align: right; }
+
+  .merchant-card {
+    display: grid; grid-template-columns: var(--tbl);
+    column-gap: var(--gut); align-items: center;
+    min-height: var(--row-h); margin: 0; padding: 0 var(--pad);
+    background: none; border: 0; border-bottom: 1px solid var(--line);
+    border-radius: 0; box-shadow: none; opacity: 1;
+    transition: background .13s ease;
+  }
+  .merchant-list > .merchant-card:last-child { border-bottom: 0; }
+  .merchant-card:hover { background: #FAF9F6; cursor: pointer; }
+
+  .m-kitchen {
+    width: 54px; height: 30px; border-radius: 9px;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--chip); color: var(--ink);
+    font: 650 12px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+    letter-spacing: .02em; margin: 0;
+  }
+  .m-info { display: contents; }
+  .m-name {
+    font-size: 14.5px; font-weight: 600; letter-spacing: -.008em; color: var(--ink);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .m-tags { display: flex; gap: 6px; justify-content: flex-end; flex-wrap: nowrap; }
+  .m-tags .tag {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-size: 9.5px; font-weight: 650; letter-spacing: .06em; text-transform: uppercase;
+    padding: 3px 8px; border-radius: 999px;
+    background: var(--chip); color: var(--ink-2); border: 0; white-space: nowrap;
+  }
+  /* a tag that carries meaning keeps its own colour — the neutral chip above is
+     only the default for attribute tags like 24 HR. Without these four lines the
+     generic rule flattens AMENDED and CHECK to grey, which demotes a warning to
+     decoration. */
+  .m-tags .tag.h24      { background: var(--blue-bg);  color: var(--blue); }
+  .m-tags .tag.amend    { background: var(--amber-bg); color: var(--amber); }
+  .m-tags .tag.flagwarn { background: #FDE8E8;         color: var(--red); }
+  .m-tags .tag.retail   { background: var(--blue-bg);  color: var(--blue); }
+  .m-tags .tag .ic { width: 11px; height: 11px; }
+
+  /* the right-hand figures block dissolves so status and money get real columns */
+  .merchant-card > div[style*="text-align:right"] { display: contents; }
+
+  /* status becomes a pill — the single biggest lift in perceived quality */
+  .m-status {
+    justify-self: start; display: inline-flex; align-items: center; gap: 5px;
+    padding: 5px 11px; border-radius: 999px;
+    font-size: 12px; font-weight: 600; letter-spacing: .005em;
+    white-space: nowrap; margin: 0;
+  }
+  .m-status.done   { background: var(--green-bg); color: var(--green); }
+  .m-status.pending{ background: var(--chip);     color: var(--ink-2); }
+  .m-status.flag   { background: var(--blue-bg);  color: var(--blue); }
+  .m-status.flagred{ background: #FBE9EB;         color: var(--red); }
+  .m-status.done:has(.m-flag) { background: var(--amber-bg); color: var(--amber); }
+  .m-flag { font-style: normal; }
+
+  .m-total {
+    justify-self: end; text-align: right;
+    font-size: 14.5px; font-weight: 650; color: var(--ink);
+    font-variant-numeric: tabular-nums; letter-spacing: -.012em;
+  }
+  /* a row with no money element still needs its column to read as intentional */
+  .merchant-card:not(:has(.m-total))::after {
+    content: "—"; grid-column: 5; justify-self: end;
+    color: var(--ink-3); font-variant-numeric: tabular-nums; font-size: 14px;
+  }
+  .rv-chev { color: var(--ink-3); width: 16px; height: 16px; }
+
+  /* flagged / unsaved rows keep a left signal without breaking the grid */
+  .merchant-card:has(.m-flag)      { box-shadow: inset 3px 0 0 var(--amber); }
+  .merchant-card:has(.m-status.flagred) { box-shadow: inset 3px 0 0 var(--red); }
+
+  /* ---------- 8 · SIDE PANEL --------------------------------------------- */
+  .panel { margin-top: 0; }
+  .panel + .panel { margin-top: 18px; }
+  .split-row {
+    display: grid; grid-template-columns: 1fr; gap: 7px;
+    padding: 13px 0; border-bottom: 1px solid var(--line);
+  }
+  .split-row:last-child { border-bottom: 0; }
+  .split-k { font-size: 12.5px; font-weight: 600; color: var(--ink); }
+  .split-bar {
+    display: block; height: 6px; border-radius: 999px; background: var(--chip);
+    overflow: hidden;
+  }
+  .split-bar i { display: block; height: 100%; background: var(--ink); border-radius: 999px; }
+  /* KeeTa's official secondary (app-icon teal). Its primary yellow is not used
+     here — see the header note. */
+  .ch-keeta .split-bar i { background: #11CB9A; }
+  .ch-fp    .split-bar i { background: #D70F64; }
+  .split-v {
+    display: flex; align-items: baseline; justify-content: space-between;
+    font-size: 13px; font-weight: 650; color: var(--ink);
+    font-variant-numeric: tabular-nums;
+  }
+  .split-v small { font-size: 11.5px; font-weight: 500; color: var(--ink-3); }
+  .rem-row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 0; border-bottom: 1px solid var(--line);
+  }
+  .rem-row:last-child { border-bottom: 0; }
+  .rem-k {
+    flex: none; min-width: 42px; text-align: center;
+    padding: 3px 7px; border-radius: 7px; background: var(--chip);
+    font: 650 11px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--ink-2);
+  }
+  .rem-n {
+    font-size: 12.5px; color: var(--ink); font-weight: 500;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .dash-empty { font-size: 12.5px; color: var(--ink-3); line-height: 1.55; }
+  .bar-chart { display: none; }
+
+  /* ---------- 9 · REVIEW -------------------------------------------------
+     Review's row is not the checklist's row. It carries who saved it and why it
+     was flagged, and its "70 orders" is a COUNT, not a status — rendering it as
+     a green pill says "this row is fine" in the one view whose job is to show
+     what is not. So the info cell re-forms (name over meta) instead of
+     dissolving, and the count goes back to being a figure. */
+  #view-review .merchant-card, #view-review .list-head {
+    --tbl: 54px minmax(0, 1fr) 108px 130px 18px;
+  }
+  #view-review .merchant-card { min-height: 62px; padding: 11px var(--pad); }
+  #view-review .m-info {
+    display: flex; flex-direction: column; align-items: flex-start;
+    gap: 5px; min-width: 0; text-align: left;
+  }
+  #view-review .m-name { max-width: 100%; }
+  #view-review .m-tags {
+    justify-content: flex-start; flex-wrap: wrap; gap: 6px; row-gap: 5px;
+  }
+  #view-review .customer-meta {
+    margin: 0; font-size: 11.5px; font-weight: 500; color: var(--ink-3);
+  }
+  #view-review .m-status.done {
+    background: none; color: var(--ink-2); padding: 0;
+    justify-self: end; font-size: 13px; font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+  #view-review .list-head span:nth-child(3),
+  #view-review .list-head span:nth-child(4) { text-align: right; }
+
+  /* Review's controls were sitting bare on the ground while the checklist put
+     everything in panels — the same page in two different design languages.
+     The date strip becomes a panel of its own, CSS only, no markup moved. */
+  #view-review .capture-body { padding: 0; }
+  #view-review #rv-dates {
+    flex-wrap: wrap !important; overflow-x: visible !important;
+    gap: 8px; padding: 18px var(--pad) 0 !important; margin: 0;
+  }
+  #view-review .rv-pick {
+    display: flex; align-items: center; gap: 10px;
+    padding: 14px var(--pad) 18px; margin: 0;
+    font-size: 12.5px; font-weight: 600; color: var(--ink-2);
+  }
+  #view-review .rv-pick .search-input {
+    width: auto; min-width: 172px; margin: 0;
+    border-radius: 10px; border: 1px solid var(--line);
+    padding: 8px 11px; font-size: 13px; background: #fff;
+  }
+  /* the strip and the picker read as one control surface */
+  #view-review #rv-dates,
+  #view-review .rv-pick { background: #fff; }
+  #view-review #rv-dates  { border-radius: var(--panel-r) var(--panel-r) 0 0; }
+  #view-review .rv-pick   { border-radius: 0 0 var(--panel-r) var(--panel-r);
+                            box-shadow: var(--lift-2); }
+  #view-review .chip-row .chip { border-radius: 999px; }
+
+  /* ---------- 9b · BILLING ----------------------------------------------
+     Billing's row puts THREE elements in the right-hand block — order count,
+     billable GMV, and the per-platform split — so dissolving that block spills
+     the split into the 16px chevron track. It needs six real columns, and the
+     header already promises six.
+     (Ported from SG dfefbea, found AFTER the main desktop pass: the same defect
+     existed here because the same rule was copied.) */
+  #view-billing .merchant-card, #view-billing .list-head {
+    --tbl: 54px minmax(0, 1fr) 118px 96px 128px 280px;
+  }
+  #view-billing .merchant-card { cursor: default; }
+  #view-billing .merchant-card:hover { background: none; }
+  #view-billing .list-head span:nth-child(3),
+  #view-billing .list-head span:nth-child(4),
+  #view-billing .list-head span:nth-child(5),
+  #view-billing .list-head span:nth-child(6) { text-align: right; }
+  #view-billing .bl-days {
+    justify-self: end; padding: 3px 9px; border-radius: 999px;
+    background: var(--chip); color: var(--ink-2);
+    font-size: 10.5px; font-weight: 650; letter-spacing: .02em; white-space: nowrap;
+  }
+  #view-billing .bl-orders {
+    justify-self: end; font-size: 13px; font-weight: 600; color: var(--ink-2);
+    font-variant-numeric: tabular-nums; white-space: nowrap;
+  }
+  /* the split is one nowrap string; if its column is narrower than the string,
+     justify-self:end makes it bleed LEFT over the GMV column instead of
+     clipping. Sized at 11px against the CEILING string (5-digit order counts,
+     7-figure amounts) = 280px, not against today's numbers: a busy month
+     measures 245px and the widest test row already bled to within 3px of the
+     GMV column at a 208px track. SG's 242px is sized to observed data; this is
+     sized so it cannot happen. The track leads. */
+  #view-billing .bl-mini {
+    justify-self: end; text-align: right; margin: 0;
+    font-size: 11px; color: var(--ink-3); white-space: nowrap;
+    font-variant-numeric: tabular-nums; letter-spacing: -.005em;
+  }
+  /* the site-total block is a figure card, not the checklist's headline band */
+  #view-billing .progress-card, #view-dinein .progress-card {
+    background: var(--band); color: #fff;
+    border-radius: var(--panel-r); padding: 20px var(--pad);
+    margin: 0 0 4px; box-shadow: var(--lift);
+  }
+  #view-billing .bl-big, #view-dinein .bl-big {
+    font-size: 26px; font-weight: 700; letter-spacing: -.022em;
+    font-variant-numeric: tabular-nums; margin: 4px 0 6px;
+  }
+  #view-billing .bl-cap, #view-dinein .bl-cap {
+    font-size: 10.5px; font-weight: 650; letter-spacing: .085em;
+    text-transform: uppercase; color: rgba(255,255,255,.5);
+  }
+  #view-billing .progress-card .bl-mini,
+  #view-dinein .progress-card .bl-mini {
+    color: rgba(255,255,255,.6); font-size: 12.5px; justify-self: auto; text-align: left;
+  }
+  #view-billing #bl-search {
+    max-width: 340px; border-radius: 10px; border: 1px solid var(--line);
+    padding: 9px 12px; font-size: 13px;
+  }
+
+  /* ---------- 9c · MANAGE BRANDS ----------------------------------------
+     These are cards, not table rows, so the table rules never reached them —
+     which leaves one column of ~968px-wide cards: a phone card stretched a
+     metre wide, the exact defect this desktop pass exists to remove. */
+  #mb-list {
+    display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 14px; align-items: start;
+  }
+  #mb-list .mb-card {
+    margin: 0; border-radius: var(--panel-r);
+    box-shadow: var(--lift-2); border: 0; height: 100%;
+  }
+  #view-brands .search-input, #view-addbrand .search-input {
+    max-width: 340px; border-radius: 10px; border: 1px solid var(--line);
+    padding: 9px 12px; font-size: 13px;
+  }
+
+  /* ---------- 10 · OTHER VIEWS ------------------------------------------- */
+  #view-review .merchant-list, #view-billing .merchant-list,
+  #view-brands .merchant-list {
+    background: #fff; border-radius: var(--panel-r); box-shadow: var(--lift-2);
+    overflow: hidden; margin-top: 14px;
+  }
+  #view-review .list-head, #view-billing .list-head { display: grid !important; }
+  #view-capture .capture-body { max-width: 620px; margin: 0 auto; }
+  #view-capture .save-bar { max-width: 620px; }
+  .dinein-entry { border-radius: var(--panel-r); box-shadow: var(--lift-2); }
+  #rv-dates { flex-wrap: wrap !important; overflow-x: visible !important; }
+}
