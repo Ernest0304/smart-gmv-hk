@@ -926,15 +926,32 @@ function renderChecklist() {
     const chans = Object.entries(byCh).sort((a, b) => b[1] - a[1]);
 
     const card = (k, v, sub, cls) =>
-      `<div class="kpi${cls ? ' ' + cls : ''}"><span class="kpi-k">${k}</span>` +
-      `<b class="kpi-v">${v}</b><span class="kpi-s">${sub}</span></div>`;
+      `<div class="kpi${cls ? ' ' + cls : ''}"><span class="kpi-k">${esc(k)}</span>` +
+      `<b class="kpi-v">${esc(v)}</b><span class="kpi-s">${esc(sub)}</span></div>`;
 
-    const pct = all.length ? Math.round(live.length / all.length * 100) : 0;
+    /* One population for the whole band. `live` is Operated-only while
+       `doneCount` counts any settled row (No sales / Not operated included), so
+       reading the percentage off one and the subtitle off the other let the same
+       band claim "80%" beside "Every kitchen has been recorded". The ring already
+       speaks for doneCount; this card follows it. */
+    const pct = all.length ? Math.round(doneCount / all.length * 100) : 0;
+    const n = (x, one, many) => `${x} ${x === 1 ? one : many}`;
+    /* flags counted over the SAME merchant list as every other figure here —
+       state.records also holds rows for disabled brands, which appear nowhere
+       else on this dashboard. */
+    const dashFlags = all.filter((m) => {
+      const r = state.records[m.id];
+      return r && r.saved && r.billingFlag && r.billingFlag !== 'OK';
+    }).length;
     const kpis =
-      card('Tonight\u2019s GMV', money(gmv), `${live.length} of ${all.length} kitchens recorded`) +
-      card('Round progress', pct + '%', left ? `${left} still to capture` : 'Round complete', left ? '' : 'is-done') +
+      card('Tonight\u2019s GMV', money(gmv),
+        `${live.length} of ${all.length} ${all.length === 1 ? 'kitchen' : 'kitchens'} recorded`) +
+      card('Round progress', pct + '%',
+        left ? `${n(left, 'kitchen', 'kitchens')} still to capture` : 'Round complete', left ? '' : 'is-done') +
       card('Orders', orders.toLocaleString('en-HK'), 'across recorded kitchens') +
-      card('To check', String(flags), flags ? 'flagged rows in tonight\u2019s round' : 'nothing flagged', flags ? 'is-flag' : '');
+      card('To check', String(dashFlags),
+        dashFlags ? `${dashFlags === 1 ? 'flagged row' : 'flagged rows'} in tonight\u2019s round` : 'nothing flagged',
+        dashFlags ? 'is-flag' : '');
 
     dash.innerHTML = `<div class="kpi-row">${kpis}</div>`;
 
@@ -951,10 +968,15 @@ function renderChecklist() {
           }).join('')
         : '<p class="dash-empty">Platform split appears once a kitchen is recorded.</p>';
 
-      const openList = all.filter((m) => !merchantDone(m)).slice(0, 8);
+      const stillOpen = all.filter((m) => !merchantDone(m));
+      const openList = stillOpen.slice(0, 8);
+      /* the cap is a display choice, so it has to be visible: a list of 8 under a
+         header reading 30 otherwise reads as the whole outstanding worklist. */
+      const hidden = stillOpen.length - openList.length;
       const remaining = openList.length
         ? openList.map((m) => `<div class="rem-row"><span class="rem-k">${esc(m.kitchen || '')}</span>` +
             `<span class="rem-n">${esc(m.brand)}</span></div>`).join('')
+          + (hidden ? `<div class="rem-row rem-more"><span class="rem-n">and ${hidden} more</span></div>` : '')
         : '<p class="dash-empty">Every kitchen on this site has been recorded.</p>';
 
       side.innerHTML =
@@ -1022,8 +1044,12 @@ function renderChecklist() {
       const tot = Object.values(r.channels).reduce((s, c) =>
         s + Number(c.finalGmv ?? c.gmv ?? 0) + (c.extras || []).reduce((t, e) => t + Number(e.gmv || 0), 0), 0);
       const when = hhmm(r.savedAt);
-      const flagMark = r.billingFlag && r.billingFlag !== 'OK' ? ' <span class="m-flag">⚑</span>' : '';
-      status = `<div style="text-align:right"><div class="m-status done">✓ ${when || 'saved'}${flagMark}</div><div class="m-total">${money(tot)}</div></div>`;
+      /* the hook is a CLASS, not a wrapper element: .m-status is a flex box with
+         gap:5px, so wrapping the ⚑ makes it a second flex item and moves it 2.2px
+         on the phone. A bare text node keeps mobile byte-identical. */
+      const flag = r.billingFlag && r.billingFlag !== 'OK';
+      const flagMark = flag ? ' ⚑' : '';
+      status = `<div style="text-align:right"><div class="m-status done${flag ? ' has-flag' : ''}">✓ ${when || 'saved'}${flagMark}</div><div class="m-total">${money(tot)}</div></div>`;
     } else if (done) {
       status = `<span class="m-status done">✓ ${esc(r.status)}</span>`;
     } else if (r && r.draft) {
@@ -1347,7 +1373,7 @@ function renderReview() {
       return `<div class="merchant-card done" data-mid="${esc(m.id)}"><div class="m-kitchen">${esc(m.kitchen)}</div>
         <div class="m-info"><div class="m-name">${esc(m.brand)}</div>
           <div class="m-tags">${by}${badges}</div></div>
-        <span class="m-status done">✓ ${esc(r.status)}</span><span class="rv-chev">›</span></div>`;
+        <span class="m-status done is-status">✓ ${esc(r.status)}</span><span></span><span class="rv-chev">›</span></div>`;
     }
     const tot = Object.values(r.channels).reduce((s, c) =>
       s + Number(c.finalGmv ?? c.gmv ?? 0) + (c.extras || []).reduce((t, e) => t + Number(e.gmv || 0), 0), 0);
@@ -1389,7 +1415,7 @@ function renderReview() {
           <div class="m-kitchen">${esc(m.kitchen)}</div>
           <div class="m-info"><div class="m-name">${esc(m.brand)}</div>
             <div class="m-tags"><span class="customer-meta">nothing saved that day</span></div></div>
-          <span class="m-status flag">＋ add record</span></div>`).join('')
+          <span class="m-status flag">＋ add record</span><span></span><span></span></div>`).join('')
     : '';
 
   /* five cells, matching review's five-track row: the "saved by" line sits
@@ -1653,7 +1679,7 @@ function channelBodyHTML(ch, val, base, mode) {
   const g = val.finalGmv ?? val.gmv;
   const fields = `<div class="reading-fields full">
       <div class="rf ${val.editedOrders ? 'edited' : ''} ${val.invalidOrders ? 'bad' : ''}"><label for="rf-${ch}-o">Orders</label><input id="rf-${ch}-o" inputmode="numeric" placeholder="0" value="${o !== undefined ? Number(o) : ''}" data-f="orders"></div>
-      <div class="rf ${val.editedGmv ? 'edited' : ''} ${val.invalidGmv ? 'bad' : ''}"><label for="rf-${ch}-g">Sales (S$)</label><input id="rf-${ch}-g" inputmode="decimal" placeholder="0.00" value="${g !== undefined ? Number(g).toFixed(2) : ''}" data-f="gmv"></div>
+      <div class="rf ${val.editedGmv ? 'edited' : ''} ${val.invalidGmv ? 'bad' : ''}"><label for="rf-${ch}-g">Sales (HK$)</label><input id="rf-${ch}-g" inputmode="decimal" placeholder="0.00" value="${g !== undefined ? Number(g).toFixed(2) : ''}" data-f="gmv"></div>
     </div>`;
   const aiChannel = AI_CHANNELS.includes(ch);
   const statusLine = !aiChannel

@@ -780,10 +780,15 @@ button, input, select, .chip, .merchant-card, .staff-btn, .site-btn,
   .progress-text p {
     font-size: 14px; color: rgba(255,255,255,.58); line-height: 1.5;
   }
+  /* NOT the arc's yellow. Painting the warning #FFE600 on a yellow ground made
+     it pixel-identical in hue to the progress arc 26px away, so one colour said
+     both "the round is progressing" and "these records are wrong" — the same
+     warning-as-decoration failure the 11 Aug contrast fix removed. Amber reads
+     as caution against this band and keeps yellow meaning progress. */
   .progress-text p.prog-flag {
     display: inline-flex; align-items: center; gap: 6px; margin-top: 10px;
     padding: 5px 12px; border-radius: 999px;
-    background: rgba(255,230,0,.13); color: #FFE600;
+    background: rgba(255,176,32,.16); color: #FFC65C;
     font-size: 12.5px; font-weight: 600; letter-spacing: .01em;
   }
   .progress-text p.prog-flag.hidden { display: none; }
@@ -842,6 +847,39 @@ button, input, select, .chip, .merchant-card, .staff-btn, .site-btn,
     display: block !important;
     grid-column: rail-start / main-end; grid-row: span 40;
     align-self: start; margin-top: 22px;
+  }
+
+  /* Below ~1180px the 320px rail plus five fixed columns exceed the width, and
+     the brand track — the only flexible one — is what gives way: measured, it
+     hits 0px and the brand name disappears entirely between 900 and ~1093px.
+     A decorative Attributes column outliving the column that says WHICH KITCHEN
+     THIS IS reads as intentional, which is worse than looking broken. The rail
+     is the expendable surface here, not the identity: fold it away and give the
+     table the whole width.
+
+     The threshold is measured, not guessed — twice over, because the first two
+     guesses were wrong. With the rail up the brand track resolves to roughly
+     (viewport - 1078px): restoring the rail at 1180px (the first width where the
+     layout merely "fits") gave an 87px brand column, and at 1310px, 217px —
+     the same defect, one step milder each time. The longest registered HK brand
+     name measures 266px in the live font, so the rail returns at 1366px, where
+     the brand column is 272px and every real name fits whole. Below that the
+     table takes the full width and the brand column is far wider than it would
+     ever be with the rail up. Nested, so the appended block still has exactly
+     one top-level @media. */
+  @media (max-width: 1365.98px) {
+    #view-checklist {
+      grid-template-columns:
+        [full-start] minmax(28px, 1fr)
+        [main-start] minmax(0, var(--main)) [main-end]
+        minmax(28px, 1fr) [full-end];
+      column-gap: 0;
+    }
+    #view-checklist > *          { grid-column: main-start / main-end; }
+    #view-checklist > .app-header,
+    #view-checklist > .demo-badge,
+    #view-checklist > .progress-card { grid-column: full; }
+    #view-checklist > #ck-side   { display: none !important; }
   }
 
   /* ---------- 6 · PANELS -------------------------------------------------- */
@@ -923,6 +961,7 @@ button, input, select, .chip, .merchant-card, .staff-btn, .site-btn,
   .m-tags .tag.amend    { background: var(--amber-bg); color: var(--amber); }
   .m-tags .tag.flagwarn { background: #FDE8E8;         color: var(--red); }
   .m-tags .tag.retail   { background: var(--blue-bg);  color: var(--blue); }
+  .m-tags .tag.aigens   { background: var(--amber-bg); color: var(--amber); }
   .m-tags .tag .ic { width: 11px; height: 11px; }
 
   /* the right-hand figures block dissolves so status and money get real columns */
@@ -939,23 +978,26 @@ button, input, select, .chip, .merchant-card, .staff-btn, .site-btn,
   .m-status.pending{ background: var(--chip);     color: var(--ink-2); }
   .m-status.flag   { background: var(--blue-bg);  color: var(--blue); }
   .m-status.flagred{ background: #FBE9EB;         color: var(--red); }
-  .m-status.done:has(.m-flag) { background: var(--amber-bg); color: var(--amber); }
-  .m-flag { font-style: normal; }
+  .m-status.done.has-flag { background: var(--amber-bg); color: var(--amber); }
 
   .m-total {
     justify-self: end; text-align: right;
     font-size: 14.5px; font-weight: 650; color: var(--ink);
     font-variant-numeric: tabular-nums; letter-spacing: -.012em;
   }
-  /* a row with no money element still needs its column to read as intentional */
-  .merchant-card:not(:has(.m-total))::after {
+  /* A row with no money element still needs its column to read as intentional —
+     but ONLY in the evening table. Column 5 is the money slot there; in Review's
+     5-track grid it is the chevron slot, and the morning table has no money
+     column at all, so an inherited dash reads as "opening GMV not captured" for
+     a kitchen that was captured. Scope it to the one table it was written for. */
+  #pnl-evening .merchant-card:not(:has(.m-total))::after {
     content: "—"; grid-column: 5; justify-self: end;
     color: var(--ink-3); font-variant-numeric: tabular-nums; font-size: 14px;
   }
   .rv-chev { color: var(--ink-3); width: 16px; height: 16px; }
 
   /* flagged / unsaved rows keep a left signal without breaking the grid */
-  .merchant-card:has(.m-flag)      { box-shadow: inset 3px 0 0 var(--amber); }
+  .merchant-card:has(.m-status.has-flag) { box-shadow: inset 3px 0 0 var(--amber); }
   .merchant-card:has(.m-status.flagred) { box-shadow: inset 3px 0 0 var(--red); }
 
   /* ---------- 8 · SIDE PANEL --------------------------------------------- */
@@ -996,6 +1038,9 @@ button, input, select, .chip, .merchant-card, .staff-btn, .site-btn,
     font-size: 12.5px; color: var(--ink); font-weight: 500;
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
+  /* the truncation marker is a row, not a footnote: it sits in the same list
+     so the eye reaches it while counting. */
+  .rem-more .rem-n { color: var(--ink-3); font-style: italic; }
   .dash-empty { font-size: 12.5px; color: var(--ink-3); line-height: 1.55; }
   .bar-chart { display: none; }
 
@@ -1020,10 +1065,18 @@ button, input, select, .chip, .merchant-card, .staff-btn, .site-btn,
   #view-review .customer-meta {
     margin: 0; font-size: 11.5px; font-weight: 500; color: var(--ink-3);
   }
-  #view-review .m-status.done {
+  /* "70 orders" is a COUNT, not a status: as a green pill it says "this row is
+     fine" in the one view whose job is to show what is not. But the genuine
+     status words (No sales / Not operated / Locked) carry the same .done class,
+     and stripping them too leaves a bare word where a state belongs. Only the
+     count is de-pilled; anything the row marks as a real status keeps its pill. */
+  #view-review .m-status.done:not(.is-status) {
     background: none; color: var(--ink-2); padding: 0;
     justify-self: end; font-size: 13px; font-weight: 600;
     font-variant-numeric: tabular-nums;
+  }
+  #view-review .m-status.done.is-status {
+    justify-self: end; background: var(--chip); color: var(--ink-2);
   }
   #view-review .list-head span:nth-child(3),
   #view-review .list-head span:nth-child(4) { text-align: right; }
@@ -1139,7 +1192,12 @@ button, input, select, .chip, .merchant-card, .staff-btn, .site-btn,
   }
   #view-review .list-head, #view-billing .list-head { display: grid !important; }
   #view-capture .capture-body { max-width: 620px; margin: 0 auto; }
-  #view-capture .save-bar { max-width: 620px; }
+  #view-capture .save-bar {
+    max-width: 620px;
+    /* the scrim faded to --paper while the desktop page is --ground, leaving a
+       lighter rectangle with hard vertical edges at the foot of the screen */
+    background: linear-gradient(to top, var(--ground) 62%, rgba(236,234,229,0));
+  }
   .dinein-entry { border-radius: var(--panel-r); box-shadow: var(--lift-2); }
   #rv-dates { flex-wrap: wrap !important; overflow-x: visible !important; }
 }
