@@ -333,6 +333,11 @@
     'No SFDC ID — logged in the catering tab only, never billed as a licensee':
       '沒有 SFDC ID — 只記入 Catering 頁籤，不會以租戶身分計費',
     'Welcome,': '歡迎，',
+    'No contracted customers found for this site.': '這個場地沒有已簽約的商戶。',
+    'Nothing saved yet today — records appear here as you save them.':
+      '今日尚未儲存任何記錄 — 儲存後會顯示在這裡。',
+    'This list comes from Salesforce. If a company name or kitchen number is wrong, correct the customer record in Salesforce — this list follows it.':
+      '此列表由 Salesforce 提供。如公司名稱或廚房編號有誤，請即時在 Salesforce 更正該商戶資料，此列表會跟著更新。',
     'Active': '使用中',
     'Disabled': '已停用',
     '24 h': '24 小時',
@@ -428,6 +433,8 @@
     [/^(\d+) days ago$/, '$1 天前'],
     [/^just now$/, '剛剛'],
     [/^a while ago$/, '較早前'],
+    [/^(.*) · last used (\d+) days ago$/, '$1 · 最近使用 $2 天前'],
+    [/^No record for (.+)$/, '$1 沒有記錄'],
     [/^No sales on (.+) today$/, function (m, c) { return '今日 ' + (CHN[c] || c) + ' 沒有銷售'; }],
     [/^(Others|Catering|Dine-in|\(Promo\) Dine-in) — none today$/,
       function (m, c) { return (CHN[c] || c) + ' — 今日沒有'; }],
@@ -466,13 +473,13 @@
      sub-header, list badges). Applied only when nothing above matched, longest
      first so a phrase is never cut in half by a shorter one. */
   var FRAG = [
-    /* lastUsedLabel() is concatenated into the resume row, so these arrive
-       inside a longer line rather than on their own. */
-    ['just now', '剛剛'],
-    ['yesterday', '昨日'],
-    ['a while ago', '較早前'],
-    [' days ago', ' 天前'],
-    ['today', '今日'],
+    /* lastUsedLabel() is concatenated into the resume row, so it arrives inside
+       a longer line. Anchored on the phrase it follows: as bare words these
+       matched any sentence containing 'today' and left it half translated. */
+    [' · last used just now', ' · 最近使用 剛剛'],
+    [' · last used today', ' · 最近使用 今日'],
+    [' · last used yesterday', ' · 最近使用 昨日'],
+    [' · last used a while ago', ' · 最近使用 較早前'],
     [' · ☀️ opening GMV', ' · ☀️ 早上讀數'],
     [' · ✏️ editing ', ' · ✏️ 編輯 '],
     [' · 🌙 morning GMV required', ' · 🌙 需要早上讀數'],
