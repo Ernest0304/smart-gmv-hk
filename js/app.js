@@ -622,8 +622,10 @@ function setPinBusy(b) {
   const el = $('pin-sub');
   if (b) {
     el.innerHTML = '<span class="spinner sm"></span> Checking…';
+    el.dataset.busy = '1';                 // a flag, not the text: the text is translated
     el.classList.remove('hidden');
-  } else if (el.textContent.includes('Checking')) {
+  } else if (el.dataset.busy) {
+    delete el.dataset.busy;
     el.classList.add('hidden');
   }
 }
@@ -1457,7 +1459,7 @@ function renderReview() {
 const CH_META = {
   /* wm: official vendor wordmark (SVG in icons/, colours baked in) shown in
      the channel-card header instead of the letter block */
-  keeta:    { name: 'KeeTa',     cls: 'keeta',  logo: 'K', hint: 'Completed + day total', wm: 'icons/keeta-wordmark.svg' },
+  keeta:    { name: 'KeeTa',     cls: 'keeta',  logo: 'K', hint: 'Completed + Ongoing', wm: 'icons/keeta-wordmark.svg' },
   fp:       { name: 'foodpanda', cls: 'fp',     logo: 'f', hint: 'All − Cancelled', wm: 'icons/foodpanda-wordmark.svg' },
   others:   { name: 'Others',    cls: 'other',  logo: 'O', hint: 'AIGENS / other platforms' },
   catering: { name: 'Catering',  cls: 'cater',  logo: 'C', hint: 'Catering orders' },

@@ -1,8 +1,8 @@
-/* Hong Kong Traditional Chinese for Smart GMV HK — PREVIEW BUILD.
+/* Hong Kong Traditional Chinese for Smart GMV HK.
  *
- * Off unless the page is opened with ?lang=zh-HK (the choice then sticks on
- * that phone until it is switched back). English stays the default, so a staff
- * member who never asks for Chinese sees exactly the app they see today.
+ * Chinese is the default (Ernest, 4 Sep). English is one tap away in the menu
+ * behind the top-left ☰, and the choice sticks on that phone. ?lang=zh-HK /
+ * ?lang=en set it from a link.
  *
  * HOW IT WORKS
  * The app's own code is not touched. This file translates what has already
@@ -34,7 +34,7 @@
   if (q) { try { localStorage.setItem(KEY, q); } catch (e) {} }
   var lang = q;
   if (!lang) { try { lang = localStorage.getItem(KEY); } catch (e) {} }
-  if (lang !== 'zh-HK') return;
+  var chinese = lang !== 'en';          // no stored choice = Chinese
 
   /* ---------- exact strings ---------- */
   var DICT = {
@@ -276,11 +276,10 @@
     'DEMO MODE · AI readings are simulated — real engine comes with the backend':
       'DEMO 模式 · AI 讀數為模擬 — 正式引擎隨後端一同啟用',
 
-    /* channel card hints. KeeTa's English hint still says 'Completed + day
-       total', which the 25 Aug rule change made wrong — the rule is 已完成 +
-       進行中. The Chinese says the right thing; the English needs the same fix
-       in app.js (CH_META). */
+    /* channel card hints */
+    'Completed + Ongoing': '已完成 + 進行中',
     'Completed + day total': '已完成 + 進行中',
+    'Checking…': '檢查中…',
     'All − Cancelled': '全部 − 已取消',
     'AIGENS / other platforms': 'AIGENS / 其他平台',
     'Catering orders': 'Catering 訂單',
@@ -467,6 +466,13 @@
      sub-header, list badges). Applied only when nothing above matched, longest
      first so a phrase is never cut in half by a shorter one. */
   var FRAG = [
+    /* lastUsedLabel() is concatenated into the resume row, so these arrive
+       inside a longer line rather than on their own. */
+    ['just now', '剛剛'],
+    ['yesterday', '昨日'],
+    ['a while ago', '較早前'],
+    [' days ago', ' 天前'],
+    ['today', '今日'],
     [' · ☀️ opening GMV', ' · ☀️ 早上讀數'],
     [' · ✏️ editing ', ' · ✏️ 編輯 '],
     [' · 🌙 morning GMV required', ' · 🌙 需要早上讀數'],
@@ -542,11 +548,13 @@
     try { walk(document.body); } finally { busy = false; }
   }
 
-  /* A way back to English without editing the URL — last item in the menu. */
+  /* The other language, last item in the menu behind ☰. Added in both modes,
+     so English is never a one-way door. */
   function addToggle() {
     var sheet = document.querySelector('#menu-overlay .menu-sheet');
     var cancel = document.getElementById('menu-cancel');
     if (!sheet || !cancel || document.getElementById('menu-lang')) return;
+    var to = chinese ? 'en' : 'zh-HK';
     var b = document.createElement('button');
     b.className = 'menu-item';
     b.id = 'menu-lang';
@@ -554,29 +562,31 @@
     mark.style.cssText = 'font-weight:800;letter-spacing:.5px';
     mark.textContent = 'A文';
     var label = document.createElement('span');
-    label.textContent = 'English';
+    label.textContent = chinese ? 'English' : '中文';
     b.appendChild(mark);
     b.appendChild(document.createTextNode(' '));
     b.appendChild(label);
     b.onclick = function () {
-      try { localStorage.setItem(KEY, 'en'); } catch (e) {}
+      try { localStorage.setItem(KEY, to); } catch (e) {}
       var u = new URL(location.href);
-      u.searchParams.set('lang', 'en');
+      u.searchParams.set('lang', to);
       location.href = u.toString();
     };
     sheet.insertBefore(b, cancel);
   }
 
   function start() {
-    document.documentElement.lang = 'zh-HK';
-    sweep();
-    new MutationObserver(function (muts) {
-      if (busy) return;
-      for (var i = 0; i < muts.length; i++) {
-        var m = muts[i];
-        if (m.type === 'characterData' || (m.addedNodes && m.addedNodes.length)) { sweep(); return; }
-      }
-    }).observe(document.body, { childList: true, subtree: true, characterData: true });
+    document.documentElement.lang = chinese ? 'zh-HK' : 'en';
+    if (chinese) {
+      sweep();
+      new MutationObserver(function (muts) {
+        if (busy) return;
+        for (var i = 0; i < muts.length; i++) {
+          var m = muts[i];
+          if (m.type === 'characterData' || (m.addedNodes && m.addedNodes.length)) { sweep(); return; }
+        }
+      }).observe(document.body, { childList: true, subtree: true, characterData: true });
+    }
     addToggle();
   }
 
