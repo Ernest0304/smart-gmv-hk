@@ -336,8 +336,8 @@
     'No contracted customers found for this site.': '這個場地沒有已簽約的商戶。',
     'Nothing saved yet today — records appear here as you save them.':
       '今日尚未儲存任何記錄 — 儲存後會顯示在這裡。',
-    'This list comes from Salesforce. If a company name or kitchen number is wrong, correct the customer record in Salesforce — this list follows it.':
-      '此列表由 Salesforce 提供。如公司名稱或廚房編號有誤，請即時在 Salesforce 更正該商戶資料，此列表會跟著更新。',
+    'This list comes from Salesforce. If a company name or kitchen number is wrong, correct the customer record in Salesforce.':
+      '此列表由 Salesforce 提供。如公司名稱或廚房編號有誤，請即時在 Salesforce 更正該商戶資料。',
     'Active': '使用中',
     'Disabled': '已停用',
     '24 h': '24 小時',
