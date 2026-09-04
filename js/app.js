@@ -54,18 +54,24 @@ function photoUrl(id) {
   return `${CONFIG.apiBase}/api/photo/${id}?t=${encodeURIComponent(state.token || '')}`;
 }
 
-async function loadCatalog() {
-  $('site-grid').innerHTML = '<p class="ab-note"><span class="spinner sm"></span> Loading sites…</p>';
+/* Two shapes from one endpoint. Before the PIN the server sends only what the
+   login screen draws (sites with a count, roster names); with a session it
+   sends the whole book. `full` re-fetches through api() so the Bearer rides
+   along and a dead session bounces to the PIN pad like any other call. */
+async function loadCatalog(full = false) {
+  if (!full) $('site-grid').innerHTML = '<p class="ab-note"><span class="spinner sm"></span> Loading sites…</p>';
   try {
     const r = CONFIG.demo ? await DEMO.fetch('/api/catalog')
+      : full ? await api('/api/catalog')
       : await fetch(`${CONFIG.apiBase}/api/catalog`);
     if (!r.ok) throw new Error(`HTTP ${r.status}`);
     const raw = await r.json();
     DATA = {
       sites: raw.sites,
       staff: raw.staff,
-      customers: raw.customers,
-      merchants: raw.merchants.map((m) => ({
+      customers: raw.customers || [],
+      cateringWindowDays: raw.cateringWindowDays,
+      merchants: (raw.merchants || []).map((m) => ({
         site: m.facility, kitchen: m.kitchen, brand: m.brand, sfdcId: m.sfdcId,
         overnight: m.overnight || undefined, disabled: m.disabled || undefined,
         keetaOn: m.keetaOn !== false, fpOn: m.fpOn !== false,
@@ -75,11 +81,14 @@ async function loadCatalog() {
         type: m.kitchen === 'CR' ? 'Cloud Retail' : 'Kitchen',
       })),
     };
-    renderSites();
+    if (!full) renderSites();
+    return true;
   } catch (e) {
+    if (full) { toast(`Could not load the merchant list (${e.message}) — try again`); return false; }
     $('site-grid').innerHTML = `<p class="ab-note">⚠ Could not load the site list (${esc(e.message)}).</p>
       <button class="btn-primary" id="btn-catalog-retry" style="margin-top:10px">Try again</button>`;
-    $('btn-catalog-retry').onclick = loadCatalog;
+    $('btn-catalog-retry').onclick = () => loadCatalog();
+    return false;
   }
 }
 
@@ -410,9 +419,9 @@ function renderResume() {
 function renderSites() {
   renderResume();
   $('site-grid').innerHTML = DATA.sites.map((s) => {
-    const n = s.id === CATERING_SITE
+    const n = s.merchantCount ?? (s.id === CATERING_SITE
       ? DATA.merchants.filter((m) => m.catering && !m.disabled).length
-      : DATA.merchants.filter((m) => m.site === s.id).length;
+      : DATA.merchants.filter((m) => m.site === s.id).length);
     return `<button class="site-btn" data-site="${esc(s.id)}">${esc(s.name)}<small>${esc(s.id)} · ${n} merchants</small></button>`;
   }).join('');
   $('site-grid').querySelectorAll('.site-btn').forEach((b) => b.onclick = () => {
@@ -747,7 +756,11 @@ async function verifyPin() {
 document.querySelectorAll('.back-link').forEach((b) => b.onclick = () => loginStep(b.dataset.back));
 
 /* ---------- checklist ---------- */
-function enterApp() {
+async function enterApp() {
+  // The pre-login catalog carries no merchants. Fetch the full book with the
+  // session first; if that fails the person stays on the login screen with a
+  // reason, rather than landing on an empty checklist.
+  if (!CONFIG.demo && !(await loadCatalog(true))) return;
   rememberUser();     // single funnel for PIN verify, PIN claim and registration
   state.merchants = siteMerchants(state.site.id);
   state.records = {};
@@ -817,7 +830,12 @@ async function hydrateTodayInner() {
     records.forEach((sr) => {
       const m = state.merchants.find((x) => x.kitchen === sr.kitchen && x.brand === sr.brand);
       if (!m) return;
+      // Re-hydrating into a live checklist: whatever THIS phone is doing to a
+      // kitchen right now (draft parked, save in flight, save failed, numbers
+      // confirmed but not yet saved) outranks the server's copy of it.
       if (sr.recordType === 'baseline') {
+        const bm = state.baselineMeta[m.id];
+        if (bm && (bm.inFlight || bm.error || (!bm.saved && baselineHasShots(m)))) return;
         state.baselineMeta[m.id] = { recordId: sr.recordId, saved: true,
           savedAt: sr.timestamp || '',
           status: sr.status || 'Operated', savedStatus: sr.status || 'Operated' };
@@ -827,6 +845,9 @@ async function hydrateTodayInner() {
             photoLink: c.photoLink, photoId: c.photoId || photoIdOf(c.photoLink) };
         });
       } else {
+        const cur = state.records[m.id];
+        if (cur && (cur.inFlight || cur.draft || saveFailed(cur)
+                    || (!cur.saved && recHasChannelData(cur)))) return;
         state.records[m.id] = serverRecToLocal(sr);
       }
     });
@@ -862,6 +883,7 @@ function unsavedRecords() {
   return list;
 }
 function renderChecklist() {
+  renderAutoNext();
   /* Disabled brands are hidden from capture but stay in state.merchants,
      so Review (history) and Manage brands still see them. */
   const all = state.merchants.filter((m) => !m.disabled);
@@ -1483,9 +1505,20 @@ function renderCateringDate(on) {
   el.classList.remove('hidden');
   $('cat-date').value = rec.salesDate || state.salesDate;
   $('cat-date').max = state.salesDate;
+  // The window is the server's (SMARTGMV_CATERING_WINDOW_DAYS), advertised in
+  // the catalog so the phone never carries its own number. min/max are set for
+  // browsers that honour them; iPhone Safari does not, hence the check below.
+  const win = DATA.cateringWindowDays;
+  if (Number.isInteger(win)) $('cat-date').min = dateForOffset(win);
   $('cat-date').onchange = () => {
     const v = $('cat-date').value;
     if (!v) return;
+    const off = offsetForDate(v);
+    if (off < 0 || (Number.isInteger(win) && off > win)) {
+      toast(off < 0 ? 'That date is after today' : `Pick a date within the last ${win} days`);
+      $('cat-date').value = rec.salesDate || state.salesDate;
+      return;
+    }
     rec.salesDate = v;
     delete rec.recordId;          // the id embeds the date
     updateSaveBtn();
@@ -2377,10 +2410,73 @@ function refreshAfterSave(mid) {
 /* Every record write goes through here: a 90s abort so a stalled upload can't
    leave the button spinning forever, and a single place that turns a non-2xx
    into a thrown message the callers surface verbatim. */
+/* Auto-next after save (SG field feedback 3 Sep; HK adopts it 4 Sep). Save
+   used to mean: back to the checklist, find the next card, tap. Now Save opens
+   the next kitchen still waiting, in list order, wrapping round; the list is
+   one tap away (back). A per-device switch on the checklist, default on. Only
+   the nightly round and the morning opening round: Review edits and catering
+   return where they came from, as before. */
+const AUTONEXT_KEY = 'smartgmv.autonext';
+function autoNextOn() { try { return localStorage.getItem(AUTONEXT_KEY) !== 'off'; } catch (e) { return true; } }
+function renderAutoNext() {
+  const b = $('autonext-toggle');
+  if (!b) return;
+  const on = autoNextOn();
+  b.classList.toggle('on', on);
+  b.setAttribute('aria-pressed', on ? 'true' : 'false');
+  b.querySelector('span').textContent = on ? 'Auto-next after save' : 'Auto-next after save · off';
+}
+$('autonext-toggle').onclick = () => {
+  try { localStorage.setItem(AUTONEXT_KEY, autoNextOn() ? 'off' : 'on'); } catch (e) {}
+  renderAutoNext();
+};
+function nextWaiting(mid, mode) {
+  const list = state.merchants.filter((m) => !m.disabled && (mode !== 'baseline' || m.overnight));
+  const i = list.findIndex((m) => m.id === mid);
+  const waiting = (m) => {
+    if (mode === 'baseline') {
+      const bm = state.baselineMeta[m.id] || {};
+      return !(bm.saved || bm.inFlight || bm.error || baselineHasShots(m));
+    }
+    const r = state.records[m.id];
+    return !(merchantDone(m) || (r && (r.inFlight || r.draft || r.saveError)));
+  };
+  for (let k = 1; k <= list.length; k++) {           // the ones after it first, then wrap
+    const m = list[(i + k) % list.length];
+    if (m.id !== mid && waiting(m)) return m;
+  }
+  return null;
+}
+function afterSaveGo(mid, mode, said) {
+  renderChecklist();
+  const nxt = autoNextOn() ? nextWaiting(mid, mode) : null;
+  if (!nxt) { if (said) toast(said); show('view-checklist'); return; }
+  openCapture(nxt.id, mode);
+  toast(said ? `${said} · next: ${nxt.kitchen} ${nxt.brand}` : `Next: ${nxt.kitchen} ${nxt.brand}`);
+}
+
 function backToChecklist() {          // the one way back to tonight's round
   renderChecklist();
   show('view-checklist');
+  refreshChecklist();
 }
+
+/* Two phones on one site used to be blind to each other until re-login. The
+   checklist now re-reads today's rows whenever it comes back into view (back
+   from a kitchen, app returning to the foreground) and on the ↻ pill. No
+   polling: Soy Street is one site and a handful of staff, and every phone
+   behind the shop router shares one rate-limit bucket, so a timer would spend
+   the same allowance saves need. Throttled so a flapping tab costs one read. */
+let lastRefresh = 0;
+function refreshChecklist(force = false) {
+  if (!state.token || !state.site || state.site.id === CATERING_SITE) return;
+  if ($('view-checklist').classList.contains('hidden')) return;
+  if (!force && Date.now() - lastRefresh < 15000) return;
+  lastRefresh = Date.now();
+  hydrateToday();
+}
+document.addEventListener('visibilitychange', () => { if (!document.hidden) refreshChecklist(); });
+$('btn-refresh').onclick = () => { refreshChecklist(true); toast('Checking for records saved on other phones…'); };
 
 async function postRecord(payload, path = '/api/records') {
   const ctrl = new AbortController();
@@ -2502,7 +2598,7 @@ async function saveBaseline(mid) {
   // away — the morning card shows ⬆ saving… and flips ✓/❗ when the server answers.
   const onBaselineView = !$('view-capture').classList.contains('hidden')
     && state.current && state.current.mode === 'baseline' && state.current.m.id === m.id;
-  if (onBaselineView) { backToChecklist(); }
+  if (onBaselineView) { afterSaveGo(mid, 'baseline', ''); }
   else if (!$('view-checklist').classList.contains('hidden')) renderChecklist();
 
   const finish = (err, resp) => {
@@ -2608,9 +2704,8 @@ $('btn-save').onclick = () => {
   const noPhoto = rec.status === 'Operated' ? missingPhotos() : [];
   const doSave = () => {
     saveRecord(m.id);
-    if (noPhoto.length) toast(`Saving — flagged: no photo for ${noPhoto.map((c) => CH_META[c].name).join(', ')}`);
-    renderChecklist();
-    show('view-checklist');
+    afterSaveGo(m.id, mode,
+      noPhoto.length ? `Saving — flagged: no photo for ${noPhoto.map((c) => CH_META[c].name).join(', ')}` : '');
   };
   if (rec.status !== 'Operated' && recHasChannelData(rec)) {
     askConfirm(`Save as “${rec.status}”?`,
@@ -2876,6 +2971,12 @@ $('ab-create').onclick = async () => {
 {
   const hl = $('hero-live');
   if (hl) hl.textContent = CONFIG.demo ? 'PREVIEW · HK' : 'LIVE · HK';
+  if (CONFIG.apiOverrideRejected) {
+    // The page is talking to PRODUCTION. Say so where a developer will look.
+    if (hl) hl.textContent += ' · ?api ignored';
+    console.error(`?api=${CONFIG.apiOverrideRejected} was ignored — use ?api=http://localhost:<port> `
+      + '(or http://127.0.0.1:<port>). This page is using the production API.');
+  }
   const b = $('mode-badge');
   if (CONFIG.demo) {
     b.textContent = 'PREVIEW · invented data, nothing is saved anywhere — the live app is untouched';
