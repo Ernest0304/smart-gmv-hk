@@ -501,15 +501,29 @@
   function tr(s) {
     var t = s.trim();
     if (!t) return null;
-    if (Object.prototype.hasOwnProperty.call(DICT, t)) return s.replace(t, DICT[t]);
-    for (var i = 0; i < RULES.length; i++) {
-      if (RULES[i][0].test(t)) return s.replace(t, t.replace(RULES[i][0], RULES[i][1]));
+    var out = null;
+    if (Object.prototype.hasOwnProperty.call(DICT, t)) {
+      out = DICT[t];
+    } else {
+      for (var i = 0; i < RULES.length; i++) {
+        if (RULES[i][0].test(t)) { out = t.replace(RULES[i][0], RULES[i][1]); break; }
+      }
+      if (out === null) {
+        var f = t, hit = false;
+        for (var j = 0; j < FRAG.length; j++) {
+          if (f.indexOf(FRAG[j][0]) !== -1) { f = f.split(FRAG[j][0]).join(FRAG[j][1]); hit = true; }
+        }
+        if (hit) out = f;
+      }
     }
-    var out = t, hit = false;
-    for (var j = 0; j < FRAG.length; j++) {
-      if (out.indexOf(FRAG[j][0]) !== -1) { out = out.split(FRAG[j][0]).join(FRAG[j][1]); hit = true; }
-    }
-    return hit ? s.replace(t, out) : null;
+    // Terms that stay English map to themselves — 'Catering' is one, through
+    // the channel-name rule. Handing that back rewrites the node with the value
+    // it already holds, and assigning nodeValue fires a characterData mutation
+    // even when nothing changed: the observer calls the sweep again, forever.
+    // The production login page froze on exactly that — the site list has a row
+    // named 'Catering'. Never return a no-op.
+    if (out === null || out === t) return null;
+    return s.replace(t, out);
   }
 
   var SKIP = { SCRIPT: 1, STYLE: 1, TEXTAREA: 1, svg: 1, path: 1, circle: 1, rect: 1 };
@@ -519,7 +533,7 @@
   function attrs(el) {
     for (var k = 0; k < ATTRS.length; k++) {
       var v = el.getAttribute(ATTRS[k]);
-      if (v) { var n = tr(v); if (n !== null) el.setAttribute(ATTRS[k], n); }
+      if (v) { var n = tr(v); if (n !== null && n !== v) el.setAttribute(ATTRS[k], n); }
     }
   }
 
@@ -535,7 +549,7 @@
     while ((t = it.nextNode())) texts.push(t);
     for (var i = 0; i < texts.length; i++) {
       var out = tr(texts[i].nodeValue);
-      if (out !== null) texts[i].nodeValue = out;
+      if (out !== null && out !== texts[i].nodeValue) texts[i].nodeValue = out;
     }
     if (root.nodeType === 1) attrs(root);
     var els = root.querySelectorAll ? root.querySelectorAll('[placeholder],[title],[aria-label]') : [];
