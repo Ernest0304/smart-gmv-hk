@@ -167,6 +167,7 @@ body {
 .ch-logo.fp { background: #D70F64; }
 .ch-logo.other { background: #444; }
 .ch-logo.dinein { background: #6A3FB5; }
+.ch-logo.ch-ico { background: none; object-fit: contain; border-radius: 0; }
 .ch-name { font-size: 15px; font-weight: 800; flex: 1; }
 .ch-hint { font-size: 11.5px; color: var(--ink-3); font-weight: 600; }
 
@@ -594,7 +595,6 @@ button, input, select, .chip, .merchant-card, .staff-btn, .site-btn,
 }
 
 /* ---- capture: vendor wordmarks + pill buttons + yellow save ---- */
-.ch-wm { height: 16px; width: auto; display: block; margin-right: auto; }
 .btn-primary {
   background: var(--kb-yellow); color: var(--kb-ink); border-radius: 9999px;
   box-shadow: none; font-weight: 800;

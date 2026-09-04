@@ -1457,10 +1457,12 @@ function renderReview() {
 
 /* ---------- capture ---------- */
 const CH_META = {
-  /* wm: official vendor wordmark (SVG in icons/, colours baked in) shown in
-     the channel-card header instead of the letter block */
-  keeta:    { name: 'KeeTa',     cls: 'keeta',  logo: 'K', hint: 'Completed + Ongoing', wm: 'icons/keeta-wordmark.svg' },
-  fp:       { name: 'foodpanda', cls: 'fp',     logo: 'f', hint: 'All − Cancelled', wm: 'icons/foodpanda-wordmark.svg' },
+  /* icon: the platform's own app icon, cut from a phone screenshot Ernest
+     supplied (4 Sep) and masked to its own corner radius. It replaces the
+     wordmarks — one of which was a placeholder I drew in the wrong yellow —
+     and reads at a glance the way the wordmark never did. */
+  keeta:    { name: 'KeeTa',     cls: 'keeta',  logo: 'K', hint: 'Completed + Ongoing', icon: 'icons/keeta-icon.png' },
+  fp:       { name: 'foodpanda', cls: 'fp',     logo: 'f', hint: 'All − Cancelled', icon: 'icons/foodpanda-icon.png' },
   others:   { name: 'Others',    cls: 'other',  logo: 'O', hint: 'AIGENS / other platforms' },
   catering: { name: 'Catering',  cls: 'cater',  logo: 'C', hint: 'Catering orders' },
   dinein:   { name: 'Dine-in',   cls: 'dinein', logo: 'D', hint: 'POS screenshot' },
@@ -1615,14 +1617,16 @@ function renderChannelCards() {
     const collapsed = optional && !rec.expanded[ch] && !channelHasData(val);
     if (collapsed) {
       return `<button class="channel-collapsed" data-expand="${ch}">
-        <div class="ch-logo ${meta.cls}">${meta.logo}</div>
+        ${meta.icon
+          ? `<img class="ch-logo ch-ico" src="${meta.icon}" alt="">`
+          : `<div class="ch-logo ${meta.cls}">${meta.logo}</div>`}
         <span>${meta.name} — none today</span><b>＋ Add</b>
       </button>`;
     }
     const base = mode === 'evening' && !state.current.offset && m.overnight && CORE.includes(ch) ? state.baselines[`${m.id}:${ch}`] : null;
-    const head = meta.wm
-      ? `<img class="ch-wm" src="${meta.wm}" alt="${meta.name}">`
-      : `<div class="ch-logo ${meta.cls}">${meta.logo}</div>
+    const head = `${meta.icon
+        ? `<img class="ch-logo ch-ico" src="${meta.icon}" alt="">`
+        : `<div class="ch-logo ${meta.cls}">${meta.logo}</div>`}
         <div class="ch-name">${meta.name}</div>`;
     return `<div class="channel-card" id="card-${ch}">
       <div class="ch-head">
