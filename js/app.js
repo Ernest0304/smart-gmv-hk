@@ -3123,13 +3123,18 @@ function renderBilling(d) {
     m.brand.toLowerCase().includes(q) || m.kitchen.toLowerCase().includes(q)) : d.merchants;
   const t = d.totals;
   const manual = (m) => m.othersGmv + m.cateringGmv + m.dineinGmv + m.promoDineinGmv;
+  /* One platform's share of a row, marked with the platform's own icon — a bare
+     K / F read as a code (Ernest, 21 Sep). A platform with nothing that month is
+     dimmed so the eye lands on the one that sold. */
+  const blCh = (ch, orders, gmv) =>
+    `<span class="bl-ch${!orders && !gmv ? ' is-zero' : ''}"><img src="${CH_META[ch].icon}" alt="${CH_META[ch].name}">${Number(orders).toLocaleString()} · ${money(gmv)}</span>`;
   const rows = shown.map((m) => `<div class="merchant-card" style="cursor:default">
       <div class="m-kitchen">${esc(m.kitchen)}</div>
       <div class="m-info"><div class="m-name">${esc(m.brand)}</div>
         <div class="m-tags"><span class="bl-days">${m.days} day${m.days > 1 ? 's' : ''} recorded</span></div></div>
-      <div style="text-align:right"><div class="bl-orders">${m.totalOrders} order${m.totalOrders === 1 ? '' : 's'}</div>
+      <div style="text-align:right"><div class="bl-orders">${m.totalOrders.toLocaleString()} order${m.totalOrders === 1 ? '' : 's'}</div>
         <div class="m-total">${money(m.totalGmv)}</div>
-        <div class="bl-mini">K ${m.billableKeetaOrders} · ${money(m.billableKeetaGmv)}&nbsp;&nbsp;F ${m.billableFpOrders} · ${money(m.billableFpGmv)}</div></div>
+        <div class="bl-mini">${blCh('keeta', m.billableKeetaOrders, m.billableKeetaGmv)}${blCh('fp', m.billableFpOrders, m.billableFpGmv)}</div></div>
     </div>`).join('');
   const flags = d.flags.length
     ? `<div class="section-label" style="margin-top:22px">${ic('alert')} Needs review <span class="sec-hint">${d.flags.length} record${d.flags.length > 1 ? 's' : ''} — clear these before invoicing</span></div>

@@ -455,6 +455,13 @@ button, input, select, .chip, .merchant-card, .staff-btn, .site-btn,
 .bl-range { display: flex; gap: 8px; align-items: center; margin-top: 10px; }
 .bl-range .search-input { flex: 1; min-width: 0; }
 .bl-arrow { color: var(--ink-2); }
+/* a billing row's platform split: icon + orders · amount, each a unit that
+   never breaks inside itself */
+.bl-ch { display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; }
+.bl-ch img { width: 13px; height: 13px; flex: none; }
+.bl-ch.is-zero { opacity: .45; }
+.bl-ch + .bl-ch { margin-left: 10px; }
+
 
 /* ---------- "continue as" resume cards on the site step ---------- */
 .staff-btn.resume { width: 100%; text-align: left; margin-bottom: 8px; }
@@ -1154,7 +1161,7 @@ button, input, select, .chip, .merchant-card, .staff-btn, .site-btn,
      sized so it cannot happen. The track leads. */
   #view-billing .bl-mini {
     justify-self: end; text-align: right; margin: 0;
-    font-size: 11px; color: var(--ink-3); white-space: nowrap;
+    font-size: 11px; color: var(--ink-2); white-space: nowrap;   /* ink-3 was 2.6:1 */
     font-variant-numeric: tabular-nums; letter-spacing: -.005em;
   }
   /* the site-total block is a figure card, not the checklist's headline band */
@@ -1217,4 +1224,55 @@ button, input, select, .chip, .merchant-card, .staff-btn, .site-btn,
   }
   .dinein-entry { border-radius: var(--panel-r); box-shadow: var(--lift-2); }
   #rv-dates { flex-wrap: wrap !important; overflow-x: visible !important; }
+}
+
+/* ---------- Monthly billing rows below 1080px --------------------------------
+   The row was kitchen | name | a right column holding orders, total and the
+   platform split. On a phone the split never wrapped, so the right column took
+   the width and the name column collapsed to 3px: brand names vanished and the
+   day count stacked one character per line. The desktop table has the same
+   failure from the other side — its fixed tracks leave the name 0px wide at a
+   900px window (Ernest, 21 Sep). Below 1080px the same markup is laid out as a
+   statement line instead: who on the left, the money on the right, the
+   platform split as a footer under a hairline. At 1080px and up the table has
+   room (name >= 150px, the ceiling split still clear of the GMV column).
+   Last in the file on purpose: in 900-1079 it sits on top of the desktop
+   block's generic row rules and has to win the ties. */
+@media (max-width: 1079.98px) {
+  #view-billing .list-head { display: none !important; }
+  #view-billing .merchant-card {
+    display: grid; grid-template-columns: 46px minmax(0, 1fr) auto;
+    grid-template-areas: "kit name total" "kit meta orders" "split split split";
+    column-gap: 12px; row-gap: 3px; align-items: center;
+    min-height: 0; padding-top: 12px; padding-bottom: 12px;
+  }
+  #view-billing .merchant-card:active { border-color: transparent; }   /* not tappable */
+  #view-billing .m-info,
+  #view-billing .merchant-card > div[style*="text-align:right"] { display: contents; }
+  #view-billing .m-kitchen { grid-area: kit; }
+  #view-billing .m-name { grid-area: name; }
+  #view-billing .m-tags { grid-area: meta; margin-top: 0; justify-content: flex-start; }
+  #view-billing .bl-days {
+    justify-self: start; padding: 2px 8px; border-radius: 999px; background: #F1EFEB;
+    color: var(--ink-2); font-size: 10.5px; font-weight: 650; white-space: nowrap;
+  }
+  #view-billing .m-total {
+    grid-area: total; justify-self: end; white-space: nowrap;
+    font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums;
+  }
+  #view-billing .bl-orders {
+    grid-area: orders; justify-self: end; white-space: nowrap;
+    font-size: 12px; font-weight: 600; color: var(--ink-2);
+  }
+  #view-billing .merchant-card .bl-mini {
+    grid-area: split; justify-self: stretch; text-align: left; letter-spacing: normal;
+    display: flex; flex-wrap: wrap; align-items: center; row-gap: 4px;
+    margin: 7px 0 0; padding-top: 8px; border-top: 1px solid var(--line);
+    font-size: 11.5px; color: var(--ink-2); font-variant-numeric: tabular-nums;
+  }
+  /* the footer runs the full width of the card, badge column included: the
+     58px it gains keeps an ordinary month (800 · $94,000.00 beside
+     160 · $18,000.50) on one line at 360px. KeeTa left, foodpanda right; only a
+     seven-figure month drops foodpanda to its own line, still right-aligned. */
+  #view-billing .merchant-card .bl-ch + .bl-ch { margin-left: auto; }
 }
