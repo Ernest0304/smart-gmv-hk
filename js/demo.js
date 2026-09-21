@@ -59,6 +59,48 @@ const DEMO = (() => {
       edited: false, baselineRef: '', billables: {}, billingFlag: '', notes: '' },
   ];
 
+  /* A month of invented billing, so Monthly billing can be walked through in the
+     preview too (21 Sep — it answered an empty month, and most of the billing
+     redesign was invisible here). Covers every state the layout has to hold:
+     both platforms, KeeTa only, foodpanda only, hand-typed channels, one flagged
+     record. Scaled to the days elapsed this month, so the 2nd never claims 20. */
+  function demoBilling(query) {
+    const dom = Number(today.slice(8, 10));
+    const r2 = (x) => Math.round(x * 100) / 100;
+    const SPEC = [            // brand, days behind today, KeeTa?, foodpanda?, hand-typed per day
+      ['Kaya Toast Club', 0, 1, 1, null],
+      ['Bao Department', 0, 1, 1, null],
+      ['Green Curry Lab', 1, 1, 1, null],
+      ['Wok & Ladle', 2, 1, 0, null],
+      ['Satay After Dark', 0, 1, 1, null],
+      ['Pandan Bakehouse', 5, 0, 1, null],
+      ['Cloud Bakehouse', 3, 1, 1, [2, 96.50]],
+      ['Midnight Mochi', 8, 1, 0, [1, 58.00]],
+    ];
+    const totals = { totalOrders: 0, totalGmv: 0, billableKeetaOrders: 0, billableKeetaGmv: 0,
+      billableFpOrders: 0, billableFpGmv: 0, othersOrders: 0, othersGmv: 0,
+      cateringOrders: 0, cateringGmv: 0, dineinOrders: 0, dineinGmv: 0,
+      promoDineinOrders: 0, promoDineinGmv: 0 };
+    const merchants = SPEC.map(([brand, behind, k, f, hand]) => {
+      const m = MERCHANTS.find((x) => x.brand === brand);
+      const days = Math.max(1, dom - behind);
+      const ko = k ? READS[brand].keeta[0] * days : 0, kg = k ? r2(READS[brand].keeta[1] * days) : 0;
+      const fo = f ? READS[brand].fp[0] * days : 0, fg = f ? r2(READS[brand].fp[1] * days) : 0;
+      const ho = hand ? hand[0] * days : 0, hg = hand ? r2(hand[1] * days) : 0;
+      totals.billableKeetaOrders += ko; totals.billableKeetaGmv = r2(totals.billableKeetaGmv + kg);
+      totals.billableFpOrders += fo; totals.billableFpGmv = r2(totals.billableFpGmv + fg);
+      totals.othersOrders += ho; totals.othersGmv = r2(totals.othersGmv + hg);
+      totals.totalOrders += ko + fo + ho; totals.totalGmv = r2(totals.totalGmv + kg + fg + hg);
+      return { kitchen: m.kitchen, brand, days, totalOrders: ko + fo + ho, totalGmv: r2(kg + fg + hg),
+        billableKeetaOrders: ko, billableKeetaGmv: kg, billableFpOrders: fo, billableFpGmv: fg,
+        othersGmv: hg, cateringGmv: 0, dineinGmv: 0, promoDineinGmv: 0 };
+    });
+    const from = query.get('from'), to = query.get('to');
+    return { month: from ? undefined : today.slice(0, 7), label: from ? `${from} → ${to}` : undefined,
+      merchants, totals,
+      flags: [{ date: today, kitchen: 'K7', brand: 'Bao Department', flag: 'CHECK', edited: true }] };
+  }
+
   const wait = (ms) => new Promise((r) => setTimeout(r, ms));
   const reply = (body, status = 200) =>
     ({ ok: status < 400, status, json: async () => body });
@@ -112,8 +154,8 @@ const DEMO = (() => {
         billing: 'OK', warnings: [] });
     }
     if (p === '/api/billing') {
-      return reply({ month: today.slice(0, 7), merchants: [], flags: [],
-        totals: { totalGmv: 0, totalOrders: 0 } });
+      await wait(300);
+      return reply(demoBilling(new URLSearchParams(path.split('?')[1] || '')));
     }
     // staff registration, pin change, merchants … — not part of the preview
     return reply({ error: 'not in the demo' }, 404);
