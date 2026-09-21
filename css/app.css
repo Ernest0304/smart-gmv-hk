@@ -455,12 +455,21 @@ button, input, select, .chip, .merchant-card, .staff-btn, .site-btn,
 .bl-range { display: flex; gap: 8px; align-items: center; margin-top: 10px; }
 .bl-range .search-input { flex: 1; min-width: 0; }
 .bl-arrow { color: var(--ink-2); }
-/* a billing row's platform split: icon + orders · amount, each a unit that
-   never breaks inside itself */
-.bl-ch { display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; }
-.bl-ch img { width: 13px; height: 13px; flex: none; }
-.bl-ch.is-zero { opacity: .45; }
-.bl-ch + .bl-ch { margin-left: 10px; }
+/* a billing row's platform split: a two-line ledger, one line per platform —
+   icon | count | amount, the figures right-aligned in their own columns so the
+   digits stack. Two lines of 11px sit inside the 56px desktop row; on every
+   width it replaces a side-by-side string that had to wrap somewhere. */
+#view-billing .merchant-card .bl-mini {
+  display: grid; grid-template-columns: 13px auto auto; column-gap: 6px; row-gap: 2px;
+  align-items: center; justify-content: end;
+}
+#view-billing .merchant-card .bl-ch { display: contents; }
+.bl-ch img { width: 13px; height: 13px; }
+#view-billing .merchant-card .bl-q,
+#view-billing .merchant-card .bl-a { justify-self: end; white-space: nowrap; }
+#view-billing .merchant-card .bl-a { padding-left: 8px; }
+/* display:contents drops the unit's own box, and its opacity with it */
+#view-billing .merchant-card .bl-ch.is-zero > * { opacity: .45; }
 
 
 /* ---------- "continue as" resume cards on the site step ---------- */
@@ -1264,15 +1273,47 @@ button, input, select, .chip, .merchant-card, .staff-btn, .site-btn,
     grid-area: orders; justify-self: end; white-space: nowrap;
     font-size: 12px; font-weight: 600; color: var(--ink-2);
   }
+  /* the ledger runs the full width of the card, badge column included: count
+     beside the icon, the amount out at the right edge under the row's total */
   #view-billing .merchant-card .bl-mini {
     grid-area: split; justify-self: stretch; text-align: left; letter-spacing: normal;
-    display: flex; flex-wrap: wrap; align-items: center; row-gap: 4px;
+    grid-template-columns: 13px auto 1fr; justify-content: stretch; row-gap: 4px;
     margin: 7px 0 0; padding-top: 8px; border-top: 1px solid var(--line);
     font-size: 11.5px; color: var(--ink-2); font-variant-numeric: tabular-nums;
   }
-  /* the footer runs the full width of the card, badge column included: the
-     58px it gains keeps an ordinary month (800 · $94,000.00 beside
-     160 · $18,000.50) on one line at 360px. KeeTa left, foodpanda right; only a
-     seven-figure month drops foodpanda to its own line, still right-aligned. */
-  #view-billing .merchant-card .bl-ch + .bl-ch { margin-left: auto; }
+}
+
+/* ---------- Monthly billing: the site total's breakdown ----------------------
+   KeeTa, foodpanda and the hand-typed channels as three units, each marked the
+   same way as the rows below it. One line on the dark desktop card; on a phone,
+   where the old single line wrapped mid-unit, a three-row table under a
+   hairline — name on the left, orders · amount on the right. */
+.bl-split { display: flex; flex-wrap: wrap; align-items: center; column-gap: 18px; row-gap: 4px; }
+.bl-su { display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; }
+.bl-su .bl-a::before { content: "· "; }                       /* inline: count · amount */
+.bl-su-k { display: inline-flex; align-items: center; gap: 5px; }
+.bl-su-k img, .bl-man { width: 13px; height: 13px; flex: none; }
+.bl-man { display: inline-flex; align-items: center; justify-content: center;
+  border-radius: 3.5px; background: #E7E5E0; color: var(--ink-2); }
+.bl-man .ic { width: 9px; height: 9px; }
+.bl-su.is-zero { opacity: .45; }
+@media (min-width: 900px) {
+  #view-billing .progress-card .bl-man { background: rgba(255,255,255,.2); color: #fff; }
+}
+@media (max-width: 899.98px) {
+  /* a table: source | count | amount, both figures right-aligned */
+  #view-billing .progress-card .bl-split {
+    display: grid; grid-template-columns: auto 1fr auto; column-gap: 12px; row-gap: 7px;
+    margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line);
+    font-size: 12.5px;
+  }
+  #view-billing .progress-card .bl-su { display: contents; }
+  #view-billing .progress-card .bl-su-k { color: var(--ink); font-weight: 600; }
+  #view-billing .progress-card .bl-su .bl-q,
+  #view-billing .progress-card .bl-su .bl-a {
+    justify-self: end; color: var(--ink-2); font-variant-numeric: tabular-nums; white-space: nowrap;
+  }
+  #view-billing .progress-card .bl-su .bl-a::before { content: none; }   /* columns, no dot */
+  /* display:contents drops the unit's own box, and its opacity with it */
+  #view-billing .progress-card .bl-su.is-zero > * { opacity: .45; }
 }

@@ -334,6 +334,12 @@
       '沒有 SFDC ID — 只記入 Catering 頁籤，不會以租戶身分計費',
     'Welcome,': '歡迎，',
     'Custom range': '自訂日期',
+    'Manual': '人手輸入',
+    /* the unit beside a count in the billing ledgers is its own node; 單 is what
+       the KeeTa device prints ('64 單'). Nothing else in the app renders a bare
+       'order' / 'orders' node (checked 21 Sep). */
+    'orders': '單',
+    'order': '單',
     'Days': '日數',
     'Billable GMV': '計費銷售額',
     'Needs review': '需要覆核',
@@ -524,9 +530,7 @@
     [' · Kitchen', ' · 廚房'],
     [' merchants', ' 間商戶'],
     [' orders · ', ' 張訂單 · '],
-    /* the site-total breakdown: others + catering + dine-in, typed by hand.
-       Anchored on the non-breaking space only that line uses. */
-    ['\u00a0manual ', '\u00a0人手輸入 ']
+    /* (the site-total breakdown is units now; 'Manual' is its own node — DICT) */
   ];
 
   function tr(s) {

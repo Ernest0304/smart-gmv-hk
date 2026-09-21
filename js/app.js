@@ -3123,11 +3123,24 @@ function renderBilling(d) {
     m.brand.toLowerCase().includes(q) || m.kitchen.toLowerCase().includes(q)) : d.merchants;
   const t = d.totals;
   const manual = (m) => m.othersGmv + m.cateringGmv + m.dineinGmv + m.promoDineinGmv;
-  /* One platform's share of a row, marked with the platform's own icon — a bare
-     K / F read as a code (Ernest, 21 Sep). A platform with nothing that month is
-     dimmed so the eye lands on the one that sold. */
+  /* Counts carry a unit — a bare 8 beside an amount did not say 8 orders
+     (Ernest, 21 Sep). 'orders' is its own node so the Chinese layer can make it
+     單, the word the KeeTa device itself prints. */
+  const qty = (n) => `<span class="bl-q">${Number(n).toLocaleString()} <span class="bl-u">${n === 1 ? 'order' : 'orders'}</span></span>`;
+  /* One platform's share of a row: its own icon (a bare K / F read as a code),
+     the count, the amount — separate elements, laid out as a small ledger. A
+     platform with nothing that month is dimmed so the eye lands on the one that
+     sold. */
   const blCh = (ch, orders, gmv) =>
-    `<span class="bl-ch${!orders && !gmv ? ' is-zero' : ''}"><img src="${CH_META[ch].icon}" alt="${CH_META[ch].name}">${Number(orders).toLocaleString()} · ${money(gmv)}</span>`;
+    `<span class="bl-ch${!orders && !gmv ? ' is-zero' : ''}"><img src="${CH_META[ch].icon}" alt="${CH_META[ch].name}"> ${qty(orders)} <span class="bl-a">${money(gmv)}</span></span>`;
+  /* The site total's breakdown, one unit per source: mark, name, orders · amount.
+     A unit never breaks inside itself — on a phone the old single line wrapped
+     between 'manual' and its own figures (Ernest, 21 Sep). Hand-typed channels
+     (others, catering, dine-in) share one unit, marked with a hand. */
+  const blUnit = (mark, name, orders, gmv) =>
+    `<span class="bl-su${!orders && !gmv ? ' is-zero' : ''}"><span class="bl-su-k">${mark}<span>${name}</span></span> ${qty(orders)} <span class="bl-a">${money(gmv)}</span></span>`;
+  const handOrders = t.othersOrders + t.cateringOrders + t.dineinOrders + t.promoDineinOrders;
+  const handGmv = t.othersGmv + t.cateringGmv + t.dineinGmv + t.promoDineinGmv;
   const rows = shown.map((m) => `<div class="merchant-card" style="cursor:default">
       <div class="m-kitchen">${esc(m.kitchen)}</div>
       <div class="m-info"><div class="m-name">${esc(m.brand)}</div>
@@ -3144,7 +3157,7 @@ function renderBilling(d) {
     <div class="progress-card" style="display:block">
       <span class="bl-cap">Site total · ${esc(label)} · billable</span>
       <div class="bl-big">${t.totalOrders.toLocaleString()} orders · ${money(t.totalGmv)}</div>
-      <div class="bl-mini">KeeTa ${t.billableKeetaOrders.toLocaleString()} · ${money(t.billableKeetaGmv)}&nbsp;&nbsp;foodpanda ${t.billableFpOrders.toLocaleString()} · ${money(t.billableFpGmv)}&nbsp;&nbsp;manual ${(t.othersOrders + t.cateringOrders + t.dineinOrders + t.promoDineinOrders).toLocaleString()} · ${money(t.othersGmv + t.cateringGmv + t.dineinGmv + t.promoDineinGmv)}</div>
+      <div class="bl-mini bl-split">${blUnit(`<img src="${CH_META.keeta.icon}" alt="">`, 'KeeTa', t.billableKeetaOrders, t.billableKeetaGmv)} ${blUnit(`<img src="${CH_META.fp.icon}" alt="">`, 'foodpanda', t.billableFpOrders, t.billableFpGmv)} ${blUnit(`<i class="bl-man">${ic('hand')}</i>`, 'Manual', handOrders, handGmv)}</div>
     </div>
     <input class="search-input" id="bl-search" placeholder="Filter merchants…" value="${esc(bl.q)}" style="margin-top:14px">
     <div class="merchant-list" style="margin-top:10px"><div class="list-head" style="display:none"><span>Kitchen</span><span>Brand</span><span>Days</span><span>Orders</span><span>Billable GMV</span><span>KeeTa · foodpanda</span></div>${rows}</div>
