@@ -1163,17 +1163,21 @@ button, input, select, .chip, .merchant-card, .staff-btn, .site-btn,
     border-radius: var(--panel-r); padding: 20px var(--pad);
     margin: 0 0 4px; box-shadow: var(--lift);
   }
+  /* The card went dark here but .bl-big kept the base sheet's own ink
+     (#1F2126): 1.15:1 on --band, the headline figure all but invisible
+     (Wesker, 21 Sep). A colour on the container does not reach a child that
+     sets its own. */
   #view-billing .bl-big, #view-dinein .bl-big {
     font-size: 26px; font-weight: 700; letter-spacing: -.022em;
-    font-variant-numeric: tabular-nums; margin: 4px 0 6px;
+    font-variant-numeric: tabular-nums; margin: 4px 0 6px; color: #fff;
   }
   #view-billing .bl-cap, #view-dinein .bl-cap {
     font-size: 10.5px; font-weight: 650; letter-spacing: .085em;
-    text-transform: uppercase; color: rgba(255,255,255,.5);
+    text-transform: uppercase; color: rgba(255,255,255,.68);   /* 8.9:1, was 5.3 */
   }
   #view-billing .progress-card .bl-mini,
   #view-dinein .progress-card .bl-mini {
-    color: rgba(255,255,255,.6); font-size: 12.5px; justify-self: auto; text-align: left;
+    color: rgba(255,255,255,.82); font-size: 12.5px; justify-self: auto; text-align: left;   /* 12.6:1, was 7.2 */
   }
   #view-billing #bl-search {
     max-width: 340px; border-radius: 10px; border: 1px solid var(--line);

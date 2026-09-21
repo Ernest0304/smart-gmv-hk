@@ -333,6 +333,14 @@
     'No SFDC ID — logged in the catering tab only, never billed as a licensee':
       '沒有 SFDC ID — 只記入 Catering 頁籤，不會以租戶身分計費',
     'Welcome,': '歡迎，',
+    'Custom range': '自訂日期',
+    'Days': '日數',
+    'Billable GMV': '計費銷售額',
+    'Needs review': '需要覆核',
+    '· edited': '· 已修改',
+    '— edited': '— 已修改',
+    'No merchant matches the filter.': '沒有符合篩選的商戶。',
+    'Try again': '再試一次',
     'No contracted customers found for this site.': '這個場地沒有已簽約的商戶。',
     'Nothing saved yet today — records appear here as you save them.':
       '今日尚未儲存任何記錄 — 儲存後會顯示在這裡。',
@@ -367,6 +375,12 @@
   var MONL = { January: 1, February: 2, March: 3, April: 4, May: 5, June: 6, July: 7,
                August: 8, September: 9, October: 10, November: 11, December: 12 };
   var WD = { Mon: '一', Tue: '二', Wed: '三', Thu: '四', Fri: '五', Sat: '六', Sun: '日' };
+  /* 'September 2026' -> '2026年9月' inside a longer line; a custom range
+     ('2026-09-01 → 2026-09-15') passes through untouched. */
+  function ym(s) {
+    var m = /^(January|February|March|April|May|June|July|August|September|October|November|December) (\d{4})$/.exec(s);
+    return m ? m[2] + '年' + MONL[m[1]] + '月' : s;
+  }
 
   /* ---------- strings with values in them ---------- */
   var RULES = [
@@ -466,7 +480,14 @@
       '$1 今日已結束 ✓ — 今晚的記錄設為「沒有營業」'],
     [/^“(.+)” is already on the staff list$/, '「$1」已在員工名單上'],
     [/^Only (\d+) more can be added \(12 max\) — first (\d+) taken$/,
-      '最多只能再加 $1 張（上限 12 張）— 已取前 $2 張']
+      '最多只能再加 $1 張（上限 12 張）— 已取前 $2 張'],
+    /* monthly billing (21 Sep sweep) — whole lines, so the FRAG ' · billable'
+       no longer leaves 'Site total · September 2026' in English beside it */
+    [/^Site total · (.+) · billable$/, function (m, l) { return '場地合計 · ' + ym(l) + ' · 計費'; }],
+    [/^No closing records for (.+) yet\.$/, function (m, l) { return ym(l) + ' 尚未有晚上讀數記錄。'; }],
+    [/^([\d,]+) days? recorded$/, '已記錄 $1 天'],
+    [/^([\d,]+) orders?$/, '$1 張訂單'],
+    [/^([\d,]+) records? — clear these before invoicing$/, '$1 筆記錄 — 開帳單前請先處理']
   ];
 
   /* Pieces that appear inside lines the app builds from parts (the capture
@@ -502,7 +523,10 @@
     ['PART-TIMER', '兼職'],
     [' · Kitchen', ' · 廚房'],
     [' merchants', ' 間商戶'],
-    [' orders · ', ' 張訂單 · ']
+    [' orders · ', ' 張訂單 · '],
+    /* the site-total breakdown: others + catering + dine-in, typed by hand.
+       Anchored on the non-breaking space only that line uses. */
+    ['\u00a0manual ', '\u00a0人手輸入 ']
   ];
 
   function tr(s) {
