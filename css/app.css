@@ -1273,11 +1273,14 @@ button, input, select, .chip, .merchant-card, .staff-btn, .site-btn,
     grid-area: orders; justify-self: end; white-space: nowrap;
     font-size: 12px; font-weight: 600; color: var(--ink-2);
   }
-  /* the ledger runs the full width of the card, badge column included: count
-     beside the icon, the amount out at the right edge under the row's total */
+  /* the ledger is the breakdown of the row's total, so it sits right under it:
+     icon | count | amount gathered at the right edge, the amounts on the same
+     line as the total above. With the count out at the left edge the pair read
+     as two unrelated figures across an empty card (Ernest, 21 Sep). The
+     hairline still runs the full width. */
   #view-billing .merchant-card .bl-mini {
     grid-area: split; justify-self: stretch; text-align: left; letter-spacing: normal;
-    grid-template-columns: 13px auto 1fr; justify-content: stretch; row-gap: 4px;
+    grid-template-columns: 13px auto auto; justify-content: end; row-gap: 4px;
     margin: 7px 0 0; padding-top: 8px; border-top: 1px solid var(--line);
     font-size: 11.5px; color: var(--ink-2); font-variant-numeric: tabular-nums;
   }
@@ -1314,6 +1317,11 @@ button, input, select, .chip, .merchant-card, .staff-btn, .site-btn,
     justify-self: end; color: var(--ink-2); font-variant-numeric: tabular-nums; white-space: nowrap;
   }
   #view-billing .progress-card .bl-su .bl-a::before { content: none; }   /* columns, no dot */
+  /* the filter sat 16px wider than the cards on each side — the total card and
+     the list are inset inside .capture-body, the input was not. Same edges now,
+     and a little slimmer; the type stays 16px, below which iOS zooms the page
+     when the field takes focus. */
+  #view-billing #bl-search { width: calc(100% - 32px); margin-left: 16px; margin-right: 16px; padding: 11px 14px; }
   /* display:contents drops the unit's own box, and its opacity with it */
   #view-billing .progress-card .bl-su.is-zero > * { opacity: .45; }
 }
